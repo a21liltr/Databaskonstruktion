@@ -127,29 +127,20 @@ CREATE TRIGGER sätt_datum_reg_alien
     BEGIN
         IF NEW.pnr IS NULL OR NEW.pnr = '' THEN
             SET NEW.pnr = CONCAT(
-                        DATE_FORMAT(NOW(), '%Y%m%d'),               -- dagens datum i formatet YYYYmmDD --
-                        '-',                                        -- ett bindesstreck för att separera datumet från de sista 4 siffrorna --
-                        LPAD(CAST((SELECT MAX(RIGHT(pnr, 4) + 1)    -- 4 siffror som ökar för varje rad insert --
+                        DATE_FORMAT(NOW(), '%Y%m%d'),               -- dagens datum i formatet YYYYmmDD
+                        '-',                                        -- ett bindesstreck för att separera datumet från de sista 4 siffrorna
+                        LPAD(CAST((SELECT MAX(RIGHT(pnr, 4) + 1)    -- 4 siffror som ökar för varje rad insert
                                    FROM Registrerad_Alien) AS UNSIGNED), 4, '0'));
         END IF;
     END;
 
-CREATE TABLE RegAlien_OregAlien_Relation(
-    registrerad_IDkod   CHAR(25),
-    oregistrerad_IDkod  CHAR(25),
+-- Relation mellan 2 aliens, vare sig de är reg eller oreg
+-- Kan inte ha foreign keys på grund av vertikal split
+CREATE TABLE Alien_Relation(
+    IDkodA   CHAR(25),
+    IDkodB  CHAR(25),
     relation    VARCHAR(30) NOT NULL,
-    PRIMARY KEY (registrerad_IDkod, oregistrerad_IDkod),
-    FOREIGN KEY (registrerad_IDkod) REFERENCES Registrerad_Alien(IDkod),
-    FOREIGN KEY (oregistrerad_IDkod) REFERENCES Oregistrerad_Alien(IDkod)
-);
-
-CREATE TABLE RegAlien_RegAlien_Relation(
-    registrerad_IDkod_1   CHAR(25),
-    registrerad_IDkod_2  CHAR(25),
-    relation    VARCHAR(30) NOT NULL,
-    PRIMARY KEY (registrerad_IDkod_1, registrerad_IDkod_2),
-    FOREIGN KEY (registrerad_IDkod_1) REFERENCES Registrerad_Alien(IDkod),
-    FOREIGN KEY (registrerad_IDkod_2) REFERENCES Registrerad_Alien(IDkod)
+    PRIMARY KEY (IDkodA, IDkodB)
 );
 
 CREATE TABLE Alien_Hemligstämplade_Logg(
@@ -445,25 +436,6 @@ CREATE USER IF NOT EXISTS 'a21liltr_administratör'@'%' IDENTIFIED BY 'bar';
 GRANT SELECT ON mysql.user TO 'a21liltr_administratör'@'%';
 GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_begränsning TO 'a21liltr_administratör'@'%';
 GRANT EXECUTE ON PROCEDURE a21liltr.ändra_begränsning TO 'a21liltr_administratör'@'%';
-
-
-SELECT * FROM mysql.user;
-
-
-CALL hemligstämpla_ras_med_id(2);
-
-SELECT * FROM Ras;
-SELECT * FROM Alien;
-
-INSERT INTO Alien (IDkod, farlighet, rasID) VALUES (111112222233333444445555, 2, 3);
-INSERT INTO Alien (IDkod, farlighet, rasID) VALUES (666662222233333444445555, 6, 1);
-INSERT INTO Alien (IDkod, rasID) VALUES (777772222233333444445555, 2);
-
-INSERT INTO Ras (rasID, namn) VALUES (2, 'Chihuahua');
-
-SELECT * FROM Alien;
-
-SELECT  * FROM mysql.user;
 
 
 
