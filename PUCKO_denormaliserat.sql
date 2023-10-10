@@ -220,10 +220,18 @@ CREATE TABLE Vapen(
     CHECK ( alien_IDkod IS NOT NULL OR skepp_id IS NOT NULL )
 );
 
+CREATE TABLE Vapen_Inköpsplatser(
+    vapen_IDnr  INT,
+    inköpsplats VARCHAR(30),
+    PRIMARY KEY (vapen_IDnr, inköpsplats),
+    FOREIGN KEY (vapen_IDnr) REFERENCES Vapen(vapen_IDnr)
+);
+
 CREATE TABLE procedure_begränsning (
     användare       VARCHAR(50) NOT NULL,
     procedure_namn  VARCHAR(50) NOT NULL,
-    antal_användningar  TINYINT NOT NULL DEFAULT 0,
+    antal_användningar  TINYINT UNSIGNED NULL DEFAULT 0,
+    begränsning     TINYINT UNSIGNED DEFAULT 3,
     PRIMARY KEY (användare, procedure_namn)
 );
 
@@ -264,13 +272,6 @@ BEGIN
         SET MESSAGE_TEXT = 'Alien har redan 15 kopplingar till vapen och/eller rymdkskepp.';
     END IF;
 END;
-
-CREATE TABLE Vapen_Inköpsplatser(
-    vapen_IDnr  INT,
-    inköpsplats VARCHAR(30),
-    PRIMARY KEY (vapen_IDnr, inköpsplats),
-    FOREIGN KEY (vapen_IDnr) REFERENCES Vapen(vapen_IDnr)
-);
 
 -- Hemligstämplar alla aliens rasfält samt rasen självt på rasID. --
 CREATE PROCEDURE hemligstämpla_ras_med_id(IN param_rasID SMALLINT)
@@ -365,9 +366,9 @@ CREATE PROCEDURE avklassificera_Alien(IN param_alien_idkod CHAR(25))
 CREATE PROCEDURE radera_alien(IN param_idkod CHAR(25))
 BEGIN
     DECLARE användningar TINYINT;
+    DECLARE stopp TINYINT;
 
     SET @nuvarande_användare = CURRENT_USER();
-    SET @begränsning = 3;
 
     -- CHECK raderingar --
     SELECT antal_användningar
@@ -376,7 +377,13 @@ BEGIN
     WHERE användare = @nuvarande_användare
     AND procedure_namn = 'radera_alien';
 
-    IF användningar >= @begränsning THEN
+    SELECT begränsning
+    INTO stopp
+    FROM procedure_begränsning
+    WHERE användare = @nuvarande_användare
+    AND procedure_namn = 'radera_alien';
+
+    IF användningar >= stopp THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Du har nått din begränsning för att radera.';
 
@@ -420,15 +427,24 @@ CREATE PROCEDURE nollställ_begränsning (IN agent VARCHAR(50), IN kommando VARC
         AND procedure_namn = kommando;
     END;
 
-CREATE USER 'a21liltr_agent'@'%' IDENTIFIED BY 'foo';
+CREATE PROCEDURE ändra_begränsning (IN agent VARCHAR(50), IN kommando VARCHAR(50), IN gräns TINYINT)
+    BEGIN
+        UPDATE procedure_begränsning
+        SET begränsning = gräns
+        WHERE användare = agent
+        AND procedure_namn = kommando;
+    END;
+
+CREATE USER IF NOT EXISTS 'a21liltr_agent'@'%' IDENTIFIED BY 'foo';
 GRANT SELECT, DELETE ON a21liltr.Ras TO 'a21liltr_agent'@'%';
 GRANT EXECUTE ON PROCEDURE a21liltr.radera_alien TO 'a21liltr_agent'@'%';
 
 
 
-CREATE USER 'a21liltr_administratör'@'%' IDENTIFIED BY 'bar';
+CREATE USER IF NOT EXISTS 'a21liltr_administratör'@'%' IDENTIFIED BY 'bar';
 GRANT SELECT ON mysql.user TO 'a21liltr_administratör'@'%';
 GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_begränsning TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.ändra_begränsning TO 'a21liltr_administratör'@'%';
 
 
 SELECT * FROM mysql.user;
