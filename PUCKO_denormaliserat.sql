@@ -218,7 +218,7 @@ CREATE TABLE Vapen_Inköpsplatser(
     FOREIGN KEY (vapen_IDnr) REFERENCES Vapen(vapen_IDnr)
 );
 
-CREATE TABLE procedure_begränsning (
+CREATE TABLE Procedure_Begränsning (
     användare       VARCHAR(50) NOT NULL,
     procedure_namn  VARCHAR(50) NOT NULL,
     antal_användningar  TINYINT UNSIGNED NULL DEFAULT 0,
@@ -399,9 +399,9 @@ BEGIN
         DELETE FROM Oregistrerad_Alien WHERE IDkod = param_idkod;
         DELETE FROM Registrerad_Alien WHERE IDkod = param_idkod;
 
-        DELETE FROM RegAlien_OregAlien_Relation
-               WHERE RegAlien_OregAlien_Relation.registrerad_idkod = param_idkod
-                  OR RegAlien_OregAlien_Relation.oregistrerad_idkod = param_idkod;
+        DELETE FROM Alien_Relation
+               WHERE IDkodA = param_idkod
+                  OR IDkodB = param_idkod;
 
         -- Raderar den faktiska alien vars IDkod man har fyllt i. --
         DELETE FROM Alien WHERE IDkod = param_idkod;
