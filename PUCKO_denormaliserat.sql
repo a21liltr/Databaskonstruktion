@@ -412,11 +412,12 @@ BEGIN
     END IF;
 END;
 
-CREATE PROCEDURE nollställ_begränsning (IN agent VARCHAR(50))
+CREATE PROCEDURE nollställ_begränsning (IN agent VARCHAR(50), IN kommando VARCHAR(50))
     BEGIN
         UPDATE procedure_begränsning
         SET antal_användningar = 0
-        WHERE användare = agent;
+        WHERE användare = agent
+        AND procedure_namn = kommando;
     END;
 
 CREATE USER 'a21liltr_agent'@'%' IDENTIFIED BY 'foo';
