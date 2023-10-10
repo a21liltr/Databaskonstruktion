@@ -1,4 +1,4 @@
-DROP DATABASE a21liltr;
+DROP DATABASE IF EXISTS a21liltr;
 CREATE DATABASE IF NOT EXISTS a21liltr;
 USE a21liltr;
 
@@ -58,15 +58,15 @@ CREATE TABLE Kännetecken_Tillhör_Ras(
 );
 
 INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken)
-    VALUES ('Hemligstämplat', 'Hemligt');
+    VALUES (1, 'Hemligt');
 INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken)
-    VALUES ('Tax', 'Liten');
+    VALUES (3, 'Liten');
 INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken)
-    VALUES ('Tax', 'Söt');
+    VALUES (3, 'Söt');
 INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken)
-    VALUES ('Chihuahua', 'Liten');
+    VALUES (2, 'Liten');
 INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken)
-    VALUES ('Chihuahua', 'Aggressiv');
+    VALUES (2, 'Aggressiv');
 
 SELECT * FROM Kännetecken_Tillhör_Ras;
 
@@ -82,7 +82,7 @@ CREATE TABLE Ras_Logg(
 
 CREATE TABLE Alien(
     IDkod       CHAR(25),
-    farlighet   TINYINT DEFAULT 4,
+    farlighet   TINYINT UNSIGNED DEFAULT 4,
     rasID         SMALLINT,
     PRIMARY KEY (IDkod),
     FOREIGN KEY (farlighet) REFERENCES Farlighet (id),
@@ -92,24 +92,27 @@ CREATE TABLE Alien(
 CREATE TABLE Oregistrerad_Alien(
     namn        VARCHAR (30),
     IDkod       CHAR(25),
-    införelsedatum CHAR(15) DEFAULT CONCAT(
-                    DATE_FORMAT(NOW(), '%Y%m%d-'),
-                    DATE_FORMAT(NOW(), '%H%i%s')),
+    införelsedatum CHAR(15),
     PRIMARY KEY (IDkod),
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
 
-    CONSTRAINT chk_pnr_format
+    CONSTRAINT chk_införelsedatum_format
     CHECK ( regexp_like(införelsedatum, '^[0-9]{8}-[0-9]{4}$') )
 );
+
+CREATE TRIGGER sätt_datum_oreg_alien
+    BEFORE INSERT ON Oregistrerad_Alien
+    FOR EACH ROW
+    BEGIN
+        IF NEW.införelsedatum IS NULL OR NEW.införelsedatum = '' THEN
+            SET NEW.införelsedatum = CONCAT(DATE_FORMAT(NOW(), '%Y%m%d-'), DATE_FORMAT(NOW(), '%H%i%s'));
+        END IF;
+    END;
 
 CREATE TABLE Registrerad_Alien(
     namn        VARCHAR(30),
     IDkod       CHAR(25),
-    pnr         CHAR(13) DEFAULT CONCAT(
-                    DATE_FORMAT(NOW(), '%Y%m%d'),               -- dagens datum i formatet YYYYmmDD --
-                    '-',                                        -- ett bindesstreck för att separera datumet från de sista 4 siffrorna --
-                    LPAD(CAST((SELECT MAX(RIGHT(pnr, 4) + 1)    -- 4 siffror som ökar för varje rad insert --
-                               FROM Registrerad_Alien) AS UNSIGNED), 4, '0')),
+    pnr         CHAR(13),
     hemplanet   VARCHAR(30) NOT NULL,
     PRIMARY KEY (IDkod, pnr),
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
@@ -117,6 +120,19 @@ CREATE TABLE Registrerad_Alien(
     CONSTRAINT chk_pnr_format
     CHECK ( regexp_like(pnr, '^[0-9]{8}-[0-9]{4}$') )
 );
+
+CREATE TRIGGER sätt_datum_reg_alien
+    BEFORE INSERT ON Registrerad_Alien
+    FOR EACH ROW
+    BEGIN
+        IF NEW.pnr IS NULL OR NEW.pnr = '' THEN
+            SET NEW.pnr = CONCAT(
+                        DATE_FORMAT(NOW(), '%Y%m%d'),               -- dagens datum i formatet YYYYmmDD --
+                        '-',                                        -- ett bindesstreck för att separera datumet från de sista 4 siffrorna --
+                        LPAD(CAST((SELECT MAX(RIGHT(pnr, 4) + 1)    -- 4 siffror som ökar för varje rad insert --
+                                   FROM Registrerad_Alien) AS UNSIGNED), 4, '0'));
+        END IF;
+    END;
 
 CREATE TABLE RegAlien_OregAlien_Relation(
     registrerad_IDkod   CHAR(25),
@@ -154,12 +170,12 @@ CREATE TABLE Kännetecken_Tillhör_Alien (
 CREATE TABLE Skepp(
     id          INT,
     tillverkningsplanet VARCHAR(30),
-    sittplatser INT ,
+    sittplatser INT,
     tillverkat  DATE,
     PRIMARY KEY (id)
 );
 
-CREATE TRIGGER check_int_value
+CREATE TRIGGER chk_sittplatser
 BEFORE INSERT ON Skepp
 FOR EACH ROW
 BEGIN
@@ -187,7 +203,7 @@ CREATE TABLE Skepp_Alien(
 CREATE TABLE Vapen(
     vapen_IDnr  INT,
     tillverkat  DATE,
-    farlighet   TINYINT DEFAULT 4,
+    farlighet   TINYINT UNSIGNED DEFAULT 4,
     alien_IDkod VARCHAR(25),
     skepp_id    INT,
     PRIMARY KEY (vapen_IDnr),
@@ -204,6 +220,51 @@ CREATE TABLE Vapen(
     CHECK ( alien_IDkod IS NOT NULL OR skepp_id IS NOT NULL )
 );
 
+CREATE TABLE procedure_begränsning (
+    användare       VARCHAR(50) NOT NULL,
+    procedure_namn  VARCHAR(50) NOT NULL,
+    antal_användningar  TINYINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (användare, procedure_namn)
+);
+
+-- Räknar samtliga rader i Vapen OCH relationstabellen Skepp_Alien som en given Alien IDkod förekommer --
+CREATE FUNCTION count_Kopplingar(IDkod VARCHAR(25)) RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE count INT;
+    SELECT COUNT(*) INTO count
+    FROM Skepp_Alien
+    JOIN Vapen ON Skepp_Alien.alien_IDkod = Vapen.alien_IDkod
+    WHERE Skepp_Alien.alien_IDkod = IDkod;
+    RETURN count;
+END;
+
+-- Säkerställer så att Alien inte kan har 15 eller fler kopplingar innan addering av ny rad --
+CREATE TRIGGER chk_kopplingar_skepp
+BEFORE INSERT ON Skepp_Alien
+FOR EACH ROW
+BEGIN
+    DECLARE count INT;
+    SET count = count_Kopplingar(NEW.alien_IDkod);
+    IF count >= 15 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Alien har redan 15 kopplingar till vapen och/eller rymdkskepp.';
+    END IF;
+END;
+
+-- Samma som föregående --
+CREATE TRIGGER chk_kopplingar_vapen
+BEFORE INSERT ON Vapen
+FOR EACH ROW
+BEGIN
+    DECLARE count INT;
+    SET count = count_Kopplingar(NEW.alien_IDkod);
+    IF count >= 15 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Alien har redan 15 kopplingar till vapen och/eller rymdkskepp.';
+    END IF;
+END;
+
 CREATE TABLE Vapen_Inköpsplatser(
     vapen_IDnr  INT,
     inköpsplats VARCHAR(30),
@@ -212,7 +273,7 @@ CREATE TABLE Vapen_Inköpsplatser(
 );
 
 -- Hemligstämplar alla aliens rasfält samt rasen självt på rasID. --
-CREATE PROCEDURE Hemligstämpla_ras_med_id(IN param_rasID SMALLINT)
+CREATE PROCEDURE hemligstämpla_ras_med_id(IN param_rasID SMALLINT)
     BEGIN
         DECLARE existerar SMALLINT;
 
@@ -248,7 +309,8 @@ CREATE PROCEDURE Hemligstämpla_ras_med_id(IN param_rasID SMALLINT)
         DELETE FROM Ras WHERE rasID = param_rasID;
     END;
 
-CREATE PROCEDURE Avklassificera(IN param_rasID SMALLINT)
+-- Avklassificerar både ras och alien med rasID --
+CREATE PROCEDURE avklassificera(IN param_rasID SMALLINT)
     BEGIN
         -- Insertar så länge rasen inte redan finns med --
         INSERT IGNORE INTO Ras (rasID, namn)
@@ -260,7 +322,7 @@ CREATE PROCEDURE Avklassificera(IN param_rasID SMALLINT)
         SELECT rasID, kännetecken FROM Ras_Logg
         WHERE rasID = param_rasID;
 
-        -- Återger alla aliens som hade rasen innan hemligstämplande --
+        -- Återger rasen till alla Aliens med samma ras innan hemligstämplande --
         UPDATE
             Alien,
             Alien_Hemligstämplade_Logg
@@ -273,7 +335,7 @@ CREATE PROCEDURE Avklassificera(IN param_rasID SMALLINT)
     END;
 
 -- Avklassificerar en specifik Alien --
-CREATE PROCEDURE Avklassificera_Alien(IN param_alien_idkod CHAR(25))
+CREATE PROCEDURE avklassificera_Alien(IN param_alien_idkod CHAR(25))
     BEGIN
         DECLARE matchning TINYINT;
 
@@ -300,40 +362,78 @@ CREATE PROCEDURE Avklassificera_Alien(IN param_alien_idkod CHAR(25))
 
     END;
 
-CREATE PROCEDURE Radera_Alien(IN param_idkod CHAR(25))
+CREATE PROCEDURE radera_alien(IN param_idkod CHAR(25))
 BEGIN
-    -- Raderar alla tillhörande kopplingar, raderingen loggas INTE. --
-    START TRANSACTION;
+    DECLARE användningar TINYINT;
 
-    DELETE FROM Alien_Hemligstämplade_Logg WHERE IDkod = param_idkod;
+    SET @nuvarande_användare = CURRENT_USER();
+    SET @begränsning = 3;
 
-    DELETE FROM Kännetecken_Tillhör_Alien WHERE IDkod = param_idkod;
+    -- CHECK raderingar --
+    SELECT antal_användningar
+    INTO användningar
+    FROM procedure_begränsning
+    WHERE användare = @nuvarande_användare
+    AND procedure_namn = 'radera_alien';
 
-    DELETE FROM Vapen WHERE alien_idkod = param_idkod;
+    IF användningar >= @begränsning THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Du har nått din begränsning för att radera.';
 
-    DELETE FROM Skepp_Alien WHERE alien_idkod = param_idkod;
+    ELSE
+        UPDATE procedure_begränsning
+        SET antal_användningar = antal_användningar + 1
+        WHERE användare = @nuvarande_användare
+        AND procedure_namn = 'radera_aien';
 
-    DELETE FROM Oregistrerad_Alien WHERE IDkod = param_idkod;
-    DELETE FROM Registrerad_Alien WHERE IDkod = param_idkod;
 
-    DELETE FROM RegAlien_OregAlien_Relation
-           WHERE RegAlien_OregAlien_Relation.registrerad_idkod = param_idkod
-              OR RegAlien_OregAlien_Relation.oregistrerad_idkod = param_idkod;
+        -- Raderar alla tillhörande kopplingar, raderingen loggas INTE. --
+        START TRANSACTION;
 
-    -- Raderar den faktiska alien vars IDkod man har fyllt i. --
-    DELETE FROM Alien WHERE IDkod = param_idkod;
+        DELETE FROM Alien_Hemligstämplade_Logg WHERE IDkod = param_idkod;
 
-    COMMIT;
+        DELETE FROM Kännetecken_Tillhör_Alien WHERE IDkod = param_idkod;
+
+        DELETE FROM Vapen WHERE alien_idkod = param_idkod;
+
+        DELETE FROM Skepp_Alien WHERE alien_idkod = param_idkod;
+
+        DELETE FROM Oregistrerad_Alien WHERE IDkod = param_idkod;
+        DELETE FROM Registrerad_Alien WHERE IDkod = param_idkod;
+
+        DELETE FROM RegAlien_OregAlien_Relation
+               WHERE RegAlien_OregAlien_Relation.registrerad_idkod = param_idkod
+                  OR RegAlien_OregAlien_Relation.oregistrerad_idkod = param_idkod;
+
+        -- Raderar den faktiska alien vars IDkod man har fyllt i. --
+        DELETE FROM Alien WHERE IDkod = param_idkod;
+
+        COMMIT;
+    END IF;
 END;
 
-CREATE TABLE Användare(
-    användar_id SMALLINT NOT NULL AUTO_INCREMENT,
-    borttagningar_alien TINYINT NOT NULL DEFAULT 0,
-    borttagningar_skepp TINYINT NOT NULL DEFAULT 0,
-    PRIMARY KEY (användar_id)
-);
+CREATE PROCEDURE nollställ_begränsning (IN agent VARCHAR(50))
+    BEGIN
+        UPDATE procedure_begränsning
+        SET antal_användningar = 0
+        WHERE användare = agent;
+    END;
 
-CALL Hemligstämpla_ras_med_id(2);
+CREATE USER 'a21liltr_agent'@'%' IDENTIFIED BY 'foo';
+GRANT SELECT, DELETE ON a21liltr.Ras TO 'a21liltr_agent'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.radera_alien TO 'a21liltr_agent'@'%';
+
+
+
+CREATE USER 'a21liltr_administratör'@'%' IDENTIFIED BY 'bar';
+GRANT SELECT ON mysql.user TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_begränsning TO 'a21liltr_administratör'@'%';
+
+
+SELECT * FROM mysql.user;
+
+
+CALL hemligstämpla_ras_med_id(2);
 
 SELECT * FROM Ras;
 SELECT * FROM Alien;
@@ -345,6 +445,8 @@ INSERT INTO Alien (IDkod, rasID) VALUES (777772222233333444445555, 2);
 INSERT INTO Ras (rasID, namn) VALUES (2, 'Chihuahua');
 
 SELECT * FROM Alien;
+
+SELECT  * FROM mysql.user;
 
 
 
