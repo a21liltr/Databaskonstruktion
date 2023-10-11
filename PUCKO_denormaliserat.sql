@@ -170,7 +170,7 @@ CREATE TRIGGER chk_sittplatser
 BEFORE INSERT ON Skepp
 FOR EACH ROW
 BEGIN
-    IF NEW.sittplatser < 1 THEN
+    IF NEW.sittplatser = NULL OR NEW.sittplatser = '';
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'SITTPLATSER must be at least 1.';
     END IF;
@@ -368,6 +368,7 @@ BEGIN
     WHERE användare = @nuvarande_användare
     AND procedure_namn = 'radera_alien';
 
+    -- En USER kan ha en specialbegränsning som är annorlunda från standarden av 3.
     SELECT begränsning
     INTO stopp
     FROM procedure_begränsning
@@ -409,6 +410,54 @@ BEGIN
         COMMIT;
     END IF;
 END;
+
+CREATE PROCEDURE radera_skepp (IN rymdskepp_id INT)
+    BEGIN
+        DECLARE användningar TINYINT;
+        DECLARE stopp TINYINT;
+
+        SET @nuvarande_användare = CURRENT_USER();
+
+        -- CHECK raderingar --
+        SELECT antal_användningar
+        INTO användningar
+        FROM procedure_begränsning
+        WHERE användare = @nuvarande_användare
+        AND procedure_namn = 'radera_skepp';
+
+        -- En USER kan ha en specialbegränsning som är annorlunda från standarden av 3.
+        SELECT begränsning
+        INTO stopp
+        FROM procedure_begränsning
+        WHERE användare = @nuvarande_användare
+        AND procedure_namn = 'radera_skepp';
+
+        IF användningar >= stopp THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Du har nått din begränsning för att radera rymdskepp.';
+
+        ELSE
+            UPDATE procedure_begränsning
+            SET antal_användningar = antal_användningar + 1
+            WHERE användare = @nuvarande_användare
+            AND procedure_namn = 'radera_aien';
+
+
+            -- Raderar alla tillhörande kopplingar, raderingen loggas INTE. --
+            START TRANSACTION;
+
+            DELETE FROM Kännetecken_Tillhör_Skepp WHERE id = rymdskepp_id;
+
+            DELETE FROM Vapen WHERE skepp_id = rymdskepp_id;
+
+            DELETE FROM Skepp_Alien WHERE skepp_id = rymdskepp_id;
+
+            -- Raderar det faktiska skeppet vars id man har fyllt i. --
+            DELETE FROM Skepp WHERE id = rymdskepp_id;
+
+            COMMIT;
+        END IF;
+    END;
 
 CREATE PROCEDURE nollställ_begränsning (IN agent VARCHAR(50), IN kommando VARCHAR(50))
     BEGIN
