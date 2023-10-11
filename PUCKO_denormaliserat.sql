@@ -170,9 +170,8 @@ CREATE TRIGGER chk_sittplatser
 BEFORE INSERT ON Skepp
 FOR EACH ROW
 BEGIN
-    IF NEW.sittplatser = NULL OR NEW.sittplatser = '';
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'SITTPLATSER must be at least 1.';
+    IF NEW.sittplatser IS NULL OR NEW.sittplatser = '' THEN
+        SET NEW.sittplatser = FLOOR(1 + RAND() * 5000);
     END IF;
 END;
 
