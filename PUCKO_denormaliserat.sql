@@ -170,9 +170,13 @@ CREATE TRIGGER chk_sittplatser
 BEFORE INSERT ON Skepp
 FOR EACH ROW
 BEGIN
-    IF NEW.sittplatser IS NULL OR NEW.sittplatser = '' THEN
-        SET NEW.sittplatser = FLOOR(1 + RAND() * 5000);
-    END IF;
+    CASE
+        WHEN NEW.sittplatser IS NULL OR NEW.sittplatser = '' THEN
+            SET NEW.sittplatser = FLOOR(1 + RAND() * 5000);
+        WHEN NEW.sittplatser > 5000 OR NEW.sittplatser < 1 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'SITTPLATSER must be between 1 and 5000.';
+    END CASE;
 END;
 
 CREATE TABLE Kännetecken_Tillhör_Skepp (
@@ -474,11 +478,10 @@ CREATE PROCEDURE ändra_begränsning (IN agent VARCHAR(50), IN kommando VARCHAR(
         AND procedure_namn = kommando;
     END;
 
+-- Skapar olika USERS för databasen med specifika rättigheter beroende på USER typ.
 CREATE USER IF NOT EXISTS 'a21liltr_agent'@'%' IDENTIFIED BY 'foo';
-GRANT SELECT, DELETE ON a21liltr.Ras TO 'a21liltr_agent'@'%';
+GRANT SELECT ON a21liltr.Ras TO 'a21liltr_agent'@'%';
 GRANT EXECUTE ON PROCEDURE a21liltr.radera_alien TO 'a21liltr_agent'@'%';
-
-
 
 CREATE USER IF NOT EXISTS 'a21liltr_administratör'@'%' IDENTIFIED BY 'bar';
 GRANT SELECT ON mysql.user TO 'a21liltr_administratör'@'%';
