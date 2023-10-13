@@ -95,7 +95,7 @@ CREATE TABLE Registrerad_Alien_Hemplanet(
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
 
     CONSTRAINT chk_pnr_hemplanet_format
-    CHECK ( regexp_like(pnr, '^[0-9]{8}-[0-9]{4}$') )
+    CHECK ( regexp_like(pnr, '^[0-9]{6}-[0-9]{4}$') )
 );
 
 CREATE TRIGGER sätt_datum_reg_alien
