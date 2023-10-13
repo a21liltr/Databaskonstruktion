@@ -30,25 +30,11 @@ CREATE TABLE Kännetecken(
     PRIMARY KEY (attribut)
 );
 
-INSERT INTO Kännetecken (attribut) VALUES ('Hemligt');
-INSERT INTO Kännetecken (attribut) VALUES ('Grön');
-INSERT INTO Kännetecken (attribut) VALUES ('Gul');
-INSERT INTO Kännetecken (attribut) VALUES ('Blå');
-INSERT INTO Kännetecken (attribut) VALUES ('Liten');
-INSERT INTO Kännetecken (attribut) VALUES ('Söt');
-INSERT INTO Kännetecken (attribut) VALUES ('Aggressiv');
-
-SELECT * FROM Kännetecken;
-
 CREATE TABLE Ras(
     rasID      SMALLINT AUTO_INCREMENT,
     namn        VARCHAR(30) UNIQUE,
     PRIMARY KEY (rasID)
 );
-
-INSERT INTO Ras (namn) VALUES ('Hemligstämplat');
-INSERT INTO Ras (namn) VALUES ('Chihuahua');
-INSERT INTO Ras (namn) VALUES ('Tax');
 
 CREATE TABLE Kännetecken_Tillhör_Ras(
     rasID       SMALLINT,
@@ -56,19 +42,6 @@ CREATE TABLE Kännetecken_Tillhör_Ras(
     PRIMARY KEY (rasID, kännetecken),
     FOREIGN KEY (rasID) REFERENCES Ras(rasID)
 );
-
-INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken)
-    VALUES (1, 'Hemligt');
-INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken)
-    VALUES (3, 'Liten');
-INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken)
-    VALUES (3, 'Söt');
-INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken)
-    VALUES (2, 'Liten');
-INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken)
-    VALUES (2, 'Aggressiv');
-
-SELECT * FROM Kännetecken_Tillhör_Ras;
 
 CREATE TABLE Ras_Logg(
     id          SMALLINT NOT NULL AUTO_INCREMENT,
