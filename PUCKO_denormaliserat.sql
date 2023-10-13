@@ -23,11 +23,20 @@ CREATE TABLE Kännetecken(
     PRIMARY KEY (attribut)
 );
 
+INSERT INTO Kännetecken (attribut) VALUES ('Liten'),
+                                          ('Grön'),
+                                          ('Söt'),
+                                          ('Aggressiv');
+
 CREATE TABLE Ras(
     rasID      SMALLINT AUTO_INCREMENT,
     namn        VARCHAR(30) UNIQUE,
     PRIMARY KEY (rasID)
 );
+
+INSERT INTO Ras (namn) VALUES ('Chihuahua'),
+                              ('Tax'),
+                              ('Gröngöling');
 
 CREATE TABLE Kännetecken_Tillhör_Ras(
     rasID       SMALLINT,
@@ -35,6 +44,12 @@ CREATE TABLE Kännetecken_Tillhör_Ras(
     PRIMARY KEY (rasID, kännetecken),
     FOREIGN KEY (rasID) REFERENCES Ras(rasID)
 );
+
+INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken) VALUES (1, 'Liten'),
+                                                                (1, 'Aggressiv'),
+                                                                (2, 'Liten'),
+                                                                (2, 'Söt'),
+                                                                (3, 'Grön');
 
 CREATE TABLE Ras_Logg(
     id          SMALLINT NOT NULL AUTO_INCREMENT,
@@ -55,6 +70,10 @@ CREATE TABLE Alien(
     FOREIGN KEY (rasID) REFERENCES Ras (rasID)
 );
 
+INSERT INTO Alien (IDkod, rasID) VALUES (1111, 1),
+                                        (2222, 2),
+                                        (3333, 3);
+
 CREATE TABLE Oregistrerad_Alien(
     namn        VARCHAR (30),
     IDkod       CHAR(25),
@@ -63,7 +82,7 @@ CREATE TABLE Oregistrerad_Alien(
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
 
     CONSTRAINT chk_införelsedatum_format
-    CHECK ( regexp_like(införelsedatum, '^[0-9]{6}-[0-9]{6}$') )
+    CHECK ( regexp_like(införelsedatum, '^[0-9]{8}-[0-9]{6}$') )
 );
 
 CREATE TRIGGER sätt_datum_oreg_alien
@@ -75,15 +94,17 @@ CREATE TRIGGER sätt_datum_oreg_alien
         END IF;
     END;
 
+INSERT INTO Oregistrerad_Alien (IDkod) VALUES (1111);
+
 CREATE TABLE Registrerad_Alien(
     namn        VARCHAR(30),
     IDkod       CHAR(25),
     pnr         CHAR(13),
-    PRIMARY KEY (IDkod, pnr),
+    PRIMARY KEY (IDkod),
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
 
     CONSTRAINT chk_pnr_format
-    CHECK ( regexp_like(pnr, '^[0-9]{6}-[0-9]{4}$') )
+    CHECK ( regexp_like(pnr, '^[0-9]{8}-[0-9]{4}$') )
 );
 
 CREATE TABLE Registrerad_Alien_Hemplanet(
@@ -95,21 +116,35 @@ CREATE TABLE Registrerad_Alien_Hemplanet(
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
 
     CONSTRAINT chk_pnr_hemplanet_format
-    CHECK ( regexp_like(pnr, '^[0-9]{6}-[0-9]{4}$') )
+    CHECK ( regexp_like(pnr, '^[0-9]{8}-[0-9]{4}$') )
 );
+
+CREATE FUNCTION sätt_pnr_reg_alien() RETURNS CHAR(13)
+DETERMINISTIC
+BEGIN
+    DECLARE count INT;
+    DECLARE new_pnr CHAR(13);
+
+    SELECT COUNT(*) INTO count
+    FROM Registrerad_Alien;
+
+    SET new_pnr = CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'), '-', LPAD(count + 1, 4, '0'));
+    RETURN new_pnr;
+END;
 
 CREATE TRIGGER sätt_datum_reg_alien
     BEFORE INSERT ON Registrerad_Alien
     FOR EACH ROW
     BEGIN
         IF NEW.pnr IS NULL OR NEW.pnr = '' THEN
-            SET NEW.pnr = CONCAT(
-                        DATE_FORMAT(NOW(), '%Y%m%d'),               -- dagens datum i formatet YYYYmmDD
-                        '-',                                        -- ett bindesstreck för att separera datumet från de sista 4 siffrorna
-                        LPAD(CAST((SELECT MAX(RIGHT(pnr, 4) + 1)    -- 4 siffror som ökar för varje rad insert
-                                   FROM Registrerad_Alien) AS UNSIGNED), 4, '0'));
+            SET NEW.pnr = sätt_pnr_reg_alien();
         END IF;
     END;
+
+INSERT INTO Registrerad_Alien (IDkod) VALUES (2222);
+INSERT INTO Registrerad_Alien (IDkod) VALUES (3333);
+
+SELECT * FROM Registrerad_Alien;
 
 CREATE TRIGGER registrera_alien_utan_planet
     AFTER INSERT ON Registrerad_Alien_Hemplanet
@@ -144,10 +179,6 @@ CREATE TABLE Kännetecken_Tillhör_Alien (
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod)
 );
 
-CREATE VIEW Alien_Kännetecken_View AS
-SELECT Alien.IDkod, Alien.rasID, Kännetecken_Tillhör_Alien.kännetecken
-FROM Alien
-JOIN Kännetecken_Tillhör_Alien ON Alien.IDkod = Kännetecken_Tillhör_Alien.IDkod;
 
 
 CREATE TABLE Skepp(
@@ -488,8 +519,14 @@ GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_begränsning TO 'a21liltr_adminis
 GRANT EXECUTE ON PROCEDURE a21liltr.ändra_begränsning TO 'a21liltr_administratör'@'%';
 
 
+CREATE VIEW Alien_personnummer AS
+SELECT IDkod, namn, pnr AS 'Personnummer'
+FROM Registrerad_Alien
+UNION
+SELECT IDkod, namn, införelsedatum AS 'Personnummer'
+FROM Oregistrerad_Alien;
 
+SELECT * FROM Alien_personnummer;
 
-
-
+SELECT * FROM Registrerad_Alien;
 
