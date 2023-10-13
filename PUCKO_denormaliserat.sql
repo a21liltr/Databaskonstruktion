@@ -34,7 +34,8 @@ CREATE TABLE Ras(
     PRIMARY KEY (rasID)
 );
 
-INSERT INTO Ras (namn) VALUES ('Chihuahua'),
+INSERT INTO Ras (namn) VALUES ('Okänt'),
+                              ('Chihuahua'),
                               ('Tax'),
                               ('Gröngöling');
 
@@ -45,11 +46,11 @@ CREATE TABLE Kännetecken_Tillhör_Ras(
     FOREIGN KEY (rasID) REFERENCES Ras(rasID)
 );
 
-INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken) VALUES (1, 'Liten'),
-                                                                (1, 'Aggressiv'),
-                                                                (2, 'Liten'),
-                                                                (2, 'Söt'),
-                                                                (3, 'Grön');
+INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken) VALUES (2, 'Liten'),
+                                                                (2, 'Aggressiv'),
+                                                                (3, 'Liten'),
+                                                                (3, 'Söt'),
+                                                                (4, 'Grön');
 
 CREATE TABLE Ras_Logg(
     id          SMALLINT NOT NULL AUTO_INCREMENT,
@@ -64,15 +65,14 @@ CREATE TABLE Ras_Logg(
 CREATE TABLE Alien(
     IDkod       CHAR(25),
     farlighet   TINYINT UNSIGNED DEFAULT 4,
-    rasID       SMALLINT,
+    rasID       SMALLINT DEFAULT 1,
     PRIMARY KEY (IDkod),
     FOREIGN KEY (farlighet) REFERENCES Farlighet (id),
     FOREIGN KEY (rasID) REFERENCES Ras (rasID)
 );
-
-INSERT INTO Alien (IDkod, rasID) VALUES (1111, 1),
-                                        (2222, 2),
-                                        (3333, 3);
+INSERT INTO Alien (IDkod, rasID) VALUES (1111, 2),
+                                        (2222, 3),
+                                        (3333, 4);
 
 CREATE TABLE Oregistrerad_Alien(
     namn        VARCHAR (30),
@@ -144,13 +144,32 @@ CREATE TRIGGER sätt_datum_reg_alien
 INSERT INTO Registrerad_Alien (IDkod) VALUES (2222);
 INSERT INTO Registrerad_Alien (IDkod) VALUES (3333);
 
-SELECT * FROM Registrerad_Alien;
 
 CREATE TRIGGER registrera_alien_utan_planet
     AFTER INSERT ON Registrerad_Alien_Hemplanet
     FOR EACH ROW
     BEGIN
         INSERT INTO Registrerad_Alien(namn, IDkod, pnr) VALUES (NEW.namn, NEW.IDkod, NEW.pnr);
+    END;
+
+
+CREATE PROCEDURE addera_alien(IN new_id CHAR(25))
+    BEGIN
+        INSERT INTO Alien (IDkod) VALUES (new_id);
+    END;
+
+CREATE TRIGGER addera_efter_oregistrerad
+    AFTER INSERT ON Oregistrerad_Alien
+    FOR EACH ROW
+    BEGIN
+        CALL addera_alien(NEW.IDkod);
+    END;
+
+CREATE TRIGGER addera_efter_registrerad
+    AFTER INSERT ON Registrerad_Alien
+    FOR EACH ROW
+    BEGIN
+        CALL addera_alien(NEW.IDkod);
     END;
 
 -- Relation mellan 2 aliens, vare sig de är reg eller oreg
@@ -178,8 +197,6 @@ CREATE TABLE Kännetecken_Tillhör_Alien (
     PRIMARY KEY (IDkod, kännetecken),
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod)
 );
-
-
 
 CREATE TABLE Skepp(
     id          INT,
@@ -527,6 +544,3 @@ SELECT IDkod, namn, införelsedatum AS 'Personnummer'
 FROM Oregistrerad_Alien;
 
 SELECT * FROM Alien_personnummer;
-
-SELECT * FROM Registrerad_Alien;
-
