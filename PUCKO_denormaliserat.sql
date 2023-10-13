@@ -199,9 +199,6 @@ CREATE TRIGGER chk_skepp
 BEFORE INSERT ON Skepp
 FOR EACH ROW
 BEGIN
-    DECLARE planet VARCHAR(30);
-    DECLARE alien_existerar CHAR (25);
-
     -- Det finns för lite information för att veta var ett skepp är tillverkat,
     -- därför sätts tillverkningsplaneten som OKÄNT i det fall då fältet är tomt.
     IF NEW.tillverkningsplanet IS NULL OR '' THEN
