@@ -3,27 +3,20 @@ CREATE DATABASE IF NOT EXISTS a21liltr;
 USE a21liltr;
 
 CREATE TABLE Farlighet(
+    id          TINYINT UNSIGNED AUTO_INCREMENT,
     grad        VARCHAR(16) UNIQUE,
-    id          TINYINT UNSIGNED,
     PRIMARY KEY (id)
 );
 
-INSERT INTO Farlighet(grad, id)
-VALUES ('Harmlös', 1);
-INSERT INTO Farlighet(grad, id)
-VALUES ('Halvt harmlös', 2);
-INSERT INTO Farlighet(grad, id)
-VALUES ('Ofarlig', 3);
-INSERT INTO Farlighet(grad, id)
-VALUES ('Neutral', 4);
-INSERT INTO Farlighet(grad, id)
-VALUES ('Svagt farlig', 5);
-INSERT INTO Farlighet(grad, id)
-VALUES ('Farlig', 6);
-INSERT INTO Farlighet(grad, id)
-VALUES ('Extremt farlig', 7);
-INSERT INTO Farlighet(grad, id)
-VALUES ('Spring för livet', 8);
+INSERT INTO Farlighet(grad)
+VALUES ('Harmlös'),
+       ('Halvt harmlös'),
+       ('Ofarlig'),
+       ('Neutral'),
+       ('Svagt farlig'),
+       ('Farlig'),
+       ('Extremt farlig'),
+       ('Spring för livet');
 
 CREATE TABLE Kännetecken(
     attribut    VARCHAR(30),
@@ -54,15 +47,6 @@ CREATE TABLE Ras_Logg(
 );
 
 CREATE TABLE Alien(
-    IDkod       CHAR(25),
-    farlighet   TINYINT UNSIGNED DEFAULT 4,
-    rasID       SMALLINT,
-    PRIMARY KEY (IDkod),
-    FOREIGN KEY (farlighet) REFERENCES Farlighet (id),
-    FOREIGN KEY (rasID) REFERENCES Ras (rasID)
-);
-
-CREATE TABLE Alien_Farlighet(
     IDkod       CHAR(25),
     farlighet   TINYINT UNSIGNED DEFAULT 4,
     rasID       SMALLINT,
@@ -239,7 +223,7 @@ CREATE TABLE Procedure_Begränsning (
 );
 
 -- Räknar samtliga rader i Vapen OCH relationstabellen Skepp_Alien som en given Alien IDkod förekommer --
-CREATE FUNCTION count_Kopplingar(IDkod VARCHAR(25)) RETURNS INT
+CREATE FUNCTION count_kopplingar(IDkod VARCHAR(25)) RETURNS INT
 DETERMINISTIC
 BEGIN
     DECLARE count INT;
@@ -256,7 +240,7 @@ BEFORE INSERT ON Skepp_Alien
 FOR EACH ROW
 BEGIN
     DECLARE count INT;
-    SET count = count_Kopplingar(NEW.alien_IDkod);
+    SET count = count_kopplingar(NEW.alien_IDkod);
     IF count >= 15 THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Alien har redan 15 kopplingar till vapen och/eller rymdkskepp.';
@@ -269,7 +253,7 @@ BEFORE INSERT ON Vapen
 FOR EACH ROW
 BEGIN
     DECLARE count INT;
-    SET count = count_Kopplingar(NEW.alien_IDkod);
+    SET count = count_kopplingar(NEW.alien_IDkod);
     IF count >= 15 THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Alien har redan 15 kopplingar till vapen och/eller rymdkskepp.';
@@ -339,7 +323,7 @@ CREATE PROCEDURE avklassificera(IN param_rasID SMALLINT)
     END;
 
 -- Avklassificerar en specifik Alien --
-CREATE PROCEDURE avklassificera_Alien(IN param_alien_idkod CHAR(25))
+CREATE PROCEDURE avklassificera_alien(IN param_alien_idkod CHAR(25))
     BEGIN
         DECLARE matchning TINYINT;
 
