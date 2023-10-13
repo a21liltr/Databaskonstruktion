@@ -63,7 +63,7 @@ CREATE TABLE Oregistrerad_Alien(
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
 
     CONSTRAINT chk_införelsedatum_format
-    CHECK ( regexp_like(införelsedatum, '^[0-9]{8}-[0-9]{4}$') )
+    CHECK ( regexp_like(införelsedatum, '^[0-9]{6}-[0-9]{6}$') )
 );
 
 CREATE TRIGGER sätt_datum_oreg_alien
@@ -83,7 +83,7 @@ CREATE TABLE Registrerad_Alien(
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
 
     CONSTRAINT chk_pnr_format
-    CHECK ( regexp_like(pnr, '^[0-9]{8}-[0-9]{4}$') )
+    CHECK ( regexp_like(pnr, '^[0-9]{6}-[0-9]{4}$') )
 );
 
 CREATE TABLE Registrerad_Alien_Hemplanet(
