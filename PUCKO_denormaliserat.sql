@@ -3,8 +3,8 @@ CREATE DATABASE IF NOT EXISTS a21liltr;
 USE a21liltr;
 
 CREATE TABLE Farlighet(
-    grad        VARCHAR(16),
-    id          TINYINT UNSIGNED UNIQUE,
+    grad        VARCHAR(16) UNIQUE,
+    id          TINYINT UNSIGNED,
     PRIMARY KEY (id)
 );
 
@@ -42,7 +42,7 @@ SELECT * FROM Kännetecken;
 
 CREATE TABLE Ras(
     rasID      SMALLINT AUTO_INCREMENT,
-    namn        VARCHAR(30),
+    namn        VARCHAR(30) UNIQUE,
     PRIMARY KEY (rasID)
 );
 
@@ -83,7 +83,16 @@ CREATE TABLE Ras_Logg(
 CREATE TABLE Alien(
     IDkod       CHAR(25),
     farlighet   TINYINT UNSIGNED DEFAULT 4,
-    rasID         SMALLINT,
+    rasID       SMALLINT,
+    PRIMARY KEY (IDkod),
+    FOREIGN KEY (farlighet) REFERENCES Farlighet (id),
+    FOREIGN KEY (rasID) REFERENCES Ras (rasID)
+);
+
+CREATE TABLE Alien_Farlighet(
+    IDkod       CHAR(25),
+    farlighet   TINYINT UNSIGNED DEFAULT 4,
+    rasID       SMALLINT,
     PRIMARY KEY (IDkod),
     FOREIGN KEY (farlighet) REFERENCES Farlighet (id),
     FOREIGN KEY (rasID) REFERENCES Ras (rasID)
@@ -113,6 +122,17 @@ CREATE TABLE Registrerad_Alien(
     namn        VARCHAR(30),
     IDkod       CHAR(25),
     pnr         CHAR(13),
+    PRIMARY KEY (IDkod, pnr),
+    FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
+
+    CONSTRAINT chk_pnr_format
+    CHECK ( regexp_like(pnr, '^[0-9]{8}-[0-9]{4}$') )
+);
+
+CREATE TABLE Registrerad_Alien_Hemplanet(
+    namn        VARCHAR(30),
+    IDkod       CHAR(25),
+    pnr         CHAR(13),
     hemplanet   VARCHAR(30) NOT NULL,
     PRIMARY KEY (IDkod, pnr),
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
@@ -134,13 +154,22 @@ CREATE TRIGGER sätt_datum_reg_alien
         END IF;
     END;
 
+CREATE TRIGGER registrera_alien_utan_planet
+    AFTER INSERT ON Registrerad_Alien_Hemplanet
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO Registrerad_Alien(namn, IDkod, pnr) VALUES (NEW.namn, NEW.IDkod, NEW.pnr);
+    END;
+
 -- Relation mellan 2 aliens, vare sig de är reg eller oreg
 -- Kan inte ha foreign keys på grund av vertikal split
 CREATE TABLE Alien_Relation(
     IDkodA   CHAR(25),
     IDkodB  CHAR(25),
     relation    VARCHAR(30) NOT NULL,
-    PRIMARY KEY (IDkodA, IDkodB)
+    PRIMARY KEY (IDkodA, IDkodB),
+    FOREIGN KEY (IDkodA) REFERENCES Alien(IDkod),
+    FOREIGN KEY (IDkodB) REFERENCES Alien(IDkod)
 );
 
 CREATE TABLE Alien_Hemligstämplade_Logg(
@@ -160,16 +189,26 @@ CREATE TABLE Kännetecken_Tillhör_Alien (
 
 CREATE TABLE Skepp(
     id          INT,
-    tillverkningsplanet VARCHAR(30),
     sittplatser INT,
+    tillverkningsplanet VARCHAR(30),
     tillverkat  DATE,
     PRIMARY KEY (id)
 );
 
-CREATE TRIGGER chk_sittplatser
+CREATE TRIGGER chk_skepp
 BEFORE INSERT ON Skepp
 FOR EACH ROW
 BEGIN
+    DECLARE planet VARCHAR(30);
+    DECLARE alien_existerar CHAR (25);
+
+    -- Det finns för lite information för att veta var ett skepp är tillverkat,
+    -- därför sätts tillverkningsplaneten som OKÄNT i det fall då fältet är tomt.
+    IF NEW.tillverkningsplanet IS NULL OR '' THEN
+        SET NEW.tillverkningsplanet = 'OKÄNT';
+    END IF;
+
+    -- CONSTRAINTS som ser till att sittplatser är mellan 1-5000.
     CASE
         WHEN NEW.sittplatser IS NULL OR NEW.sittplatser = '' THEN
             SET NEW.sittplatser = FLOOR(1 + RAND() * 5000);
@@ -275,12 +314,12 @@ CREATE PROCEDURE hemligstämpla_ras_med_id(IN param_rasID SMALLINT)
         -- Kollar om 'Hemligstämplat redan existerar. --
         SELECT COUNT(*) INTO existerar
         FROM Ras
-        WHERE namn = 'Hemlighetsstämplat';
+        WHERE namn = 'HEMLIGSTÄMPLAT';
 
         IF existerar = 0 THEN
-            -- Skapar 'Hemligstämplat' om den inte redan finns. --
+            -- Skapar 'HEMLIGSTÄMPLAT' om den inte redan finns. --
             INSERT INTO Ras (namn)
-            VALUES ('Hemlighetsstämplat');
+            VALUES ('HEMLIGSTÄMPLAT');
         END IF;
 
         -- Loggför aliens med rasen som hemligstämplas. --
@@ -293,7 +332,7 @@ CREATE PROCEDURE hemligstämpla_ras_med_id(IN param_rasID SMALLINT)
         SELECT rasID, kännetecken FROM Kännetecken_Tillhör_Ras
         WHERE rasID = param_rasID;
 
-        -- Uppdaterar aliens med rasen till 'Hemligstämplat'. --
+        -- Uppdaterar aliens med rasen till 'HEMLIGSTÄMPLAT'. --
         UPDATE
             Alien,
             Ras
@@ -342,7 +381,7 @@ CREATE PROCEDURE avklassificera_Alien(IN param_alien_idkod CHAR(25))
         -- matchning bör vara antingen 0 ELLER 1, då IDkoden är unik.
         IF matchning = 0 THEN
             SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'The IDkod of this Alien does not exist or is NOT Hemligstämplat.';
+            SET MESSAGE_TEXT = 'The IDkod of this Alien does not exist or is NOT HEMLIGSTÄMPLAT.';
 
         ELSE
             UPDATE
