@@ -144,6 +144,12 @@ CREATE TABLE Kännetecken_Tillhör_Alien (
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod)
 );
 
+CREATE VIEW Alien_Kännetecken_View AS
+SELECT Alien.IDkod, Alien.rasID, Kännetecken_Tillhör_Alien.kännetecken
+FROM Alien
+JOIN Kännetecken_Tillhör_Alien ON Alien.IDkod = Kännetecken_Tillhör_Alien.IDkod;
+
+
 CREATE TABLE Skepp(
     id          INT,
     sittplatser INT,
