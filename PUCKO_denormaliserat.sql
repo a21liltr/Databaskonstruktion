@@ -137,7 +137,7 @@ CREATE TABLE Registrerad_Alien_Hemplanet(
     PRIMARY KEY (IDkod, pnr),
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
 
-    CONSTRAINT chk_pnr_format
+    CONSTRAINT chk_pnr_hemplanet_format
     CHECK ( regexp_like(pnr, '^[0-9]{8}-[0-9]{4}$') )
 );
 
@@ -403,14 +403,14 @@ BEGIN
     -- CHECK raderingar --
     SELECT antal_användningar
     INTO användningar
-    FROM procedure_begränsning
+    FROM Procedure_Begränsning
     WHERE användare = @nuvarande_användare
     AND procedure_namn = 'radera_alien';
 
     -- En USER kan ha en specialbegränsning som är annorlunda från standarden av 3.
     SELECT begränsning
     INTO stopp
-    FROM procedure_begränsning
+    FROM Procedure_Begränsning
     WHERE användare = @nuvarande_användare
     AND procedure_namn = 'radera_alien';
 
@@ -419,7 +419,7 @@ BEGIN
         SET MESSAGE_TEXT = 'Du har nått din begränsning för att radera.';
 
     ELSE
-        UPDATE procedure_begränsning
+        UPDATE Procedure_Begränsning
         SET antal_användningar = antal_användningar + 1
         WHERE användare = @nuvarande_användare
         AND procedure_namn = 'radera_aien';
@@ -460,14 +460,14 @@ CREATE PROCEDURE radera_skepp (IN rymdskepp_id INT)
         -- CHECK raderingar --
         SELECT antal_användningar
         INTO användningar
-        FROM procedure_begränsning
+        FROM Procedure_Begränsning
         WHERE användare = @nuvarande_användare
         AND procedure_namn = 'radera_skepp';
 
         -- En USER kan ha en specialbegränsning som är annorlunda från standarden av 3.
         SELECT begränsning
         INTO stopp
-        FROM procedure_begränsning
+        FROM Procedure_Begränsning
         WHERE användare = @nuvarande_användare
         AND procedure_namn = 'radera_skepp';
 
@@ -476,7 +476,7 @@ CREATE PROCEDURE radera_skepp (IN rymdskepp_id INT)
             SET MESSAGE_TEXT = 'Du har nått din begränsning för att radera rymdskepp.';
 
         ELSE
-            UPDATE procedure_begränsning
+            UPDATE Procedure_Begränsning
             SET antal_användningar = antal_användningar + 1
             WHERE användare = @nuvarande_användare
             AND procedure_namn = 'radera_aien';
@@ -500,7 +500,7 @@ CREATE PROCEDURE radera_skepp (IN rymdskepp_id INT)
 
 CREATE PROCEDURE nollställ_begränsning (IN agent VARCHAR(50), IN kommando VARCHAR(50))
     BEGIN
-        UPDATE procedure_begränsning
+        UPDATE Procedure_Begränsning
         SET antal_användningar = 0
         WHERE användare = agent
         AND procedure_namn = kommando;
@@ -508,7 +508,7 @@ CREATE PROCEDURE nollställ_begränsning (IN agent VARCHAR(50), IN kommando VARC
 
 CREATE PROCEDURE ändra_begränsning (IN agent VARCHAR(50), IN kommando VARCHAR(50), IN gräns TINYINT)
     BEGIN
-        UPDATE procedure_begränsning
+        UPDATE Procedure_Begränsning
         SET begränsning = gräns
         WHERE användare = agent
         AND procedure_namn = kommando;
