@@ -24,16 +24,6 @@ CREATE TABLE Alien(
 
 CREATE INDEX alien_rasnamn_index ON Alien (ras_namn ASC) USING BTREE;
 
-CREATE TABLE Kännetecken_Tillhör_Alien (
-    IDkod       CHAR(25),
-    alien_kännetecken VARCHAR(32),
-    ras_kännetecken VARCHAR(32),
-    PRIMARY KEY (IDkod),
-    FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
-    FOREIGN KEY (alien_kännetecken) REFERENCES Kännetecken(attribut),
-    FOREIGN KEY (ras_kännetecken) REFERENCES Kännetecken(attribut)
-);
-
 CREATE TABLE Oregistrerad_Alien(
     namn        VARCHAR (30),
     IDkod       CHAR(25),
@@ -106,6 +96,16 @@ CREATE TRIGGER sätt_datum_reg_alien
             SET NEW.pnr = sätt_pnr_reg_alien();
         END IF;
     END;
+
+CREATE TABLE Kännetecken_Tillhör_Alien (
+    IDkod       CHAR(25),
+    alien_kännetecken VARCHAR(32),
+    ras_kännetecken VARCHAR(32),
+    PRIMARY KEY (IDkod),
+    FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
+    FOREIGN KEY (alien_kännetecken) REFERENCES Kännetecken(attribut),
+    FOREIGN KEY (ras_kännetecken) REFERENCES Kännetecken(attribut)
+);
 
 CREATE TABLE Alien_Relation(
     IDkodA      CHAR(25),
