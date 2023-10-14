@@ -32,10 +32,12 @@ CREATE TABLE Alien(
     IDkod       CHAR(25),
     farlighet   TINYINT UNSIGNED DEFAULT 4,
     rasID       SMALLINT DEFAULT 1,
-    ras_namn        VARCHAR(30),
+    ras_namn    VARCHAR(30),
     PRIMARY KEY (IDkod),
     FOREIGN KEY (farlighet) REFERENCES Farlighet (id)
 );
+
+CREATE INDEX alien_rasnamn_index ON Alien (ras_namn ASC) USING BTREE;
 
 CREATE TABLE Oregistrerad_Alien(
     namn        VARCHAR (30),
@@ -69,12 +71,12 @@ CREATE TRIGGER sätt_datum_oreg_alien
         END IF;
     END;
 
-INSERT INTO Oregistrerad_Alien (IDkod) VALUES (1111);
+INSERT INTO Oregistrerad_Alien (IDkod, namn) VALUES (1111, 'Okänd');
 
 CREATE TABLE Registrerad_Alien(
     namn        VARCHAR(30),
     IDkod       CHAR(25),
-    pnr         CHAR(13),
+    pnr         CHAR(13) UNIQUE,
     hemplanet   VARCHAR(30) NOT NULL,
     PRIMARY KEY (IDkod),
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
@@ -112,19 +114,9 @@ CREATE TRIGGER sätt_datum_reg_alien
         END IF;
     END;
 
-INSERT INTO Registrerad_Alien (IDkod) VALUES (2222);
-INSERT INTO Registrerad_Alien (IDkod) VALUES (3333);
+INSERT INTO Registrerad_Alien (IDkod, namn, hemplanet) VALUES (2222, 'Torbjörn', 'MWDXACJA');
+INSERT INTO Registrerad_Alien (IDkod, namn, hemplanet) VALUES (3333, 'Bert', 'I2OJNLW9');
 
-
-CREATE TRIGGER registrera_alien_utan_planet
-    AFTER INSERT ON Registrerad_Alien_Hemplanet
-    FOR EACH ROW
-    BEGIN
-        INSERT INTO Registrerad_Alien(namn, IDkod, pnr) VALUES (NEW.namn, NEW.IDkod, NEW.pnr);
-    END;
-
--- Relation mellan 2 aliens, vare sig de är reg eller oreg
--- Kan inte ha foreign keys på grund av vertikal split
 CREATE TABLE Alien_Relation(
     IDkodA      CHAR(25),
     IDkodB      CHAR(25),
@@ -144,6 +136,8 @@ CREATE TABLE Alien_Hemligstämplade_Logg(
     PRIMARY KEY (loggID)
 );
 
+CREATE INDEX hemlig_logg_index ON Alien_Hemligstämplade_Logg (logg_datum ASC) USING BTREE;
+
 CREATE TABLE Alien_Hemligstämplade_Logg_Kommentar(
     loggID      SMALLINT AUTO_INCREMENT,
     kommentar   VARCHAR(255),
@@ -152,7 +146,7 @@ CREATE TABLE Alien_Hemligstämplade_Logg_Kommentar(
 );
 
 CREATE TABLE Kännetecken_Tillhör_Alien (
-    IDkod       VARCHAR(25),
+    IDkod       CHAR(25),
     alien_kännetecken VARCHAR(32),
     ras_kännetecken VARCHAR(32),
     PRIMARY KEY (IDkod),
@@ -180,20 +174,20 @@ BEGIN
     END IF;
 
     -- CONSTRAINTS som ser till att sittplatser är mellan 1-5000.
-    CASE
-        WHEN NEW.sittplatser IS NULL OR NEW.sittplatser = '' THEN
-            SET NEW.sittplatser = FLOOR(1 + RAND() * 5000);
-        WHEN NEW.sittplatser > 5000 OR NEW.sittplatser < 1 THEN
+    IF NEW.sittplatser IS NULL OR NEW.sittplatser = '' THEN
+        SET NEW.sittplatser = FLOOR(1 + RAND() * 5000);
+    ELSEIF NEW.sittplatser > 5000 OR NEW.sittplatser < 1 THEN
             SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'SITTPLATSER must be between 1 and 5000.';
-    END CASE;
+    END IF;
 END;
 
 CREATE TABLE Kännetecken_Tillhör_Skepp (
     id          INT,
     kännetecken VARCHAR(30),
     PRIMARY KEY (id, kännetecken),
-    FOREIGN KEY (id) REFERENCES Skepp (id)
+    FOREIGN KEY (id) REFERENCES Skepp (id),
+    FOREIGN KEY (kännetecken) REFERENCES Kännetecken (attribut)
 );
 
 CREATE TABLE Skepp_Alien(
@@ -229,7 +223,6 @@ CREATE TABLE Vapen_Ägare(
     alien_IDkod VARCHAR(25),
     skepp_id    INT,
     PRIMARY KEY (vapen_IDnr),
-    FOREIGN KEY (farlighet) REFERENCES Farlighet (id),
     CONSTRAINT FOREIGN KEY (skepp_id) REFERENCES Skepp (id),
     CONSTRAINT FOREIGN KEY (alien_IDkod) REFERENCES Alien (IDkod),
 
@@ -397,7 +390,7 @@ BEGIN
         UPDATE Procedure_Begränsning
         SET antal_användningar = antal_användningar + 1
         WHERE användare = @nuvarande_användare
-        AND procedure_namn = 'radera_aien';
+        AND procedure_namn = 'radera_alien';
 
 
         -- Raderar alla tillhörande kopplingar, raderingen loggas INTE.
@@ -458,7 +451,6 @@ CREATE PROCEDURE radera_skepp (IN rymdskepp_id INT)
             WHERE användare = @nuvarande_användare
             AND procedure_namn = 'radera_aien';
 
-
             -- Raderar alla tillhörande kopplingar, raderingen loggas INTE.
             START TRANSACTION;
 
@@ -500,12 +492,68 @@ GRANT SELECT ON mysql.user TO 'a21liltr_administratör'@'%';
 GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_begränsning TO 'a21liltr_administratör'@'%';
 GRANT EXECUTE ON PROCEDURE a21liltr.ändra_begränsning TO 'a21liltr_administratör'@'%';
 
+INSERT INTO Kännetecken_Tillhör_Alien (IDkod, alien_kännetecken, ras_kännetecken)
+VALUES (2222, 'Liten', 'Söt');
 
-CREATE VIEW Alien_personnummer AS
-SELECT IDkod, namn, pnr AS 'Personnummer'
+INSERT INTO Skepp (id, sittplatser) VALUES (1212, 4),
+                                           (5656, 8);
+
+-- Förenklad vy för att kunna få en överblick över alla 'personnummer' på registrerade aliens,
+-- samt införelsedatum i databasen (som även dessa kommer stå under 'personnummer') för oregistrerade aliens,
+-- dvs en överblick över alla registrerade och oregistrerade aliens i en tabell.
+-- Här ser man även snabbt vilka aliens som är registrerade då de har en kortare personnummer,
+-- medan de oregistrerade aliens har ett längre "personnummer".
+CREATE VIEW Alien_Personnummer_view AS
+SELECT IDkod, namn, pnr AS 'Personnummer', hemplanet
 FROM Registrerad_Alien
 UNION
-SELECT IDkod, namn, införelsedatum AS 'Personnummer'
+SELECT IDkod, namn, införelsedatum AS 'Personnummer', NULL as 'hemplanet'
 FROM Oregistrerad_Alien;
 
-SELECT * FROM Alien_personnummer;
+-- Här kan man se en vy över alla aliens och skepp som har kännetecken i en och samma tabell.
+CREATE VIEW Kännetecken_Entitet_view AS
+SELECT IDkod AS 'ID', alien_kännetecken AS 'Kännetecken'
+FROM Kännetecken_Tillhör_Alien
+UNION
+SELECT id AS 'ID', kännetecken AS 'Kännetecken'
+FROM Kännetecken_Tillhör_Skepp;
+
+UPDATE Alien
+SET ras_namn = 'test'
+WHERE IDkod = 1111;
+
+UPDATE Alien
+SET ras_namn = 'HEMLIGSTÄMPLAT'
+WHERE IDkod = 2222;
+
+-- Här kan en användare med lägre auktorisation se en vy över aliens som inte är hemligstämplade.
+-- Det kan vara så att enbart agenter med högre auktoritet som får se aliens med hemligstämplade raser.
+-- I annat fall kan det även vara bra för att se vilka aliens som inte är hemligstämplade ännu...
+CREATE VIEW Offentliga_Raser_view AS
+SELECT IDkod, ras_namn
+FROM Alien
+WHERE ras_namn <> 'HEMLIGSTÄMPLAT' OR ras_namn IS NULL
+GROUP BY ras_namn;
+
+CREATE VIEW Hemliga_Aliens_view AS
+SELECT IDkod, ras_namn
+FROM Alien
+WHERE ras_namn = 'HEMLIGSTÄMPLAT'
+GROUP BY ras_namn;
+
+-- Här kan man se vilka agenter som har nått sina begränsningar på procedurer.
+CREATE VIEW Nått_Begränsning_view AS
+SELECT användare AS 'USER', antal_användningar AS 'ANVÄNDNINGAR', begränsning 'GRÄNS', procedure_namn
+FROM Procedure_Begränsning
+WHERE antal_användningar = begränsning;
+
+-- Här kan man se agenternas medelvärde på användningarna av procedurer.
+CREATE VIEW AVG_Användning_view AS
+SELECT procedure_namn, AVG(antal_användningar)
+FROM Procedure_Begränsning
+GROUP BY procedure_namn;
+
+
+
+
+
