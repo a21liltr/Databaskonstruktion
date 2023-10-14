@@ -75,6 +75,7 @@ CREATE TABLE Registrerad_Alien(
     namn        VARCHAR(30),
     IDkod       CHAR(25),
     pnr         CHAR(13),
+    hemplanet   VARCHAR(30) NOT NULL,
     PRIMARY KEY (IDkod),
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
 
@@ -88,18 +89,6 @@ CREATE TRIGGER addera_efter_registrerad
     BEGIN
         CALL addera_alien(NEW.IDkod);
     END;
-
-CREATE TABLE Registrerad_Alien_Hemplanet(
-    namn        VARCHAR(30),
-    IDkod       CHAR(25),
-    pnr         CHAR(13),
-    hemplanet   VARCHAR(30) NOT NULL,
-    PRIMARY KEY (IDkod, pnr),
-    FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
-
-    CONSTRAINT chk_pnr_hemplanet_format
-    CHECK ( regexp_like(pnr, '^[0-9]{8}-[0-9]{4}$') )
-);
 
 CREATE FUNCTION sätt_pnr_reg_alien() RETURNS CHAR(13)
 DETERMINISTIC
@@ -221,11 +210,29 @@ CREATE TABLE Vapen(
     CONSTRAINT FOREIGN KEY (alien_IDkod) REFERENCES Alien (IDkod),
 
     -- CHECK som kollar att så att ett fält är tomt.
-    CONSTRAINT chk_vapen_alienid_skeppid
+    CONSTRAINT chk_vapen_null
     CHECK ( alien_IDkod IS NULL OR skepp_id IS NULL ),
 
     -- CHECK som kollar att ett fält INTE är tomt.
-    CONSTRAINT chk_vapen_har_alienid_skeppid
+    CONSTRAINT chk_vapen_not_null
+    CHECK ( alien_IDkod IS NOT NULL OR skepp_id IS NOT NULL )
+);
+
+CREATE TABLE Vapen_Ägare(
+    vapen_IDnr  INT,
+    alien_IDkod VARCHAR(25),
+    skepp_id    INT,
+    PRIMARY KEY (vapen_IDnr),
+    FOREIGN KEY (farlighet) REFERENCES Farlighet (id),
+    CONSTRAINT FOREIGN KEY (skepp_id) REFERENCES Skepp (id),
+    CONSTRAINT FOREIGN KEY (alien_IDkod) REFERENCES Alien (IDkod),
+
+    -- CHECK som kollar att så att ett fält är tomt.
+    CONSTRAINT chk_vapen_ägare_null
+    CHECK ( alien_IDkod IS NULL OR skepp_id IS NULL ),
+
+    -- CHECK som kollar att ett fält INTE är tomt.
+    CONSTRAINT chk_vapen_ägare_not_null
     CHECK ( alien_IDkod IS NOT NULL OR skepp_id IS NOT NULL )
 );
 
@@ -395,6 +402,8 @@ BEGIN
         DELETE FROM Kännetecken_Tillhör_Alien WHERE IDkod = param_idkod;
 
         DELETE FROM Vapen WHERE alien_idkod = param_idkod;
+
+        DELETE FROM Vapen_Ägare WHERE alien_idkod = param_idkod;
 
         DELETE FROM Skepp_Alien WHERE alien_idkod = param_idkod;
 
