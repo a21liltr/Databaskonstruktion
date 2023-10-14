@@ -28,7 +28,16 @@ INSERT INTO Registrerad_Alien (IDkod, namn, hemplanet)
            (4444, 'Märta', 'Jorden');
 
 INSERT INTO Kännetecken_Tillhör_Alien (IDkod, alien_kännetecken, ras_kännetecken)
-    VALUES (2222, 'Liten', 'Söt');
+    VALUES (1111, 'Hemlig', 'Söt'),
+           (2222, 'Grön'),
+           (3333, 'Stor'),
+           (3333, 'Grön'),
+           (4444, 'Söt');
+
+INSERT INTO Alien_Relation (IDkodA, IDkodB, relation) VALUES (1111, 4444, 'Gifta'),
+                                                             (1111, 2222, 'Syskon'),
+                                                             (7777, 3333, 'Kollegor'),
+                                                             (7777, 4444, 'Fiender');
 
 INSERT INTO Skepp (id, sittplatser) VALUES (1212, 4),
                                            (5656, 8);
