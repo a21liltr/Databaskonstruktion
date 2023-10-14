@@ -32,7 +32,7 @@ CREATE TABLE Alien(
     IDkod       CHAR(25),
     farlighet   TINYINT UNSIGNED DEFAULT 4,
     rasID       SMALLINT DEFAULT 1,
-    namn        VARCHAR(30),
+    ras_namn        VARCHAR(30),
     PRIMARY KEY (IDkod),
     FOREIGN KEY (farlighet) REFERENCES Farlighet (id)
 );
@@ -126,8 +126,8 @@ CREATE TRIGGER registrera_alien_utan_planet
 -- Relation mellan 2 aliens, vare sig de är reg eller oreg
 -- Kan inte ha foreign keys på grund av vertikal split
 CREATE TABLE Alien_Relation(
-    IDkodA   CHAR(25),
-    IDkodB  CHAR(25),
+    IDkodA      CHAR(25),
+    IDkodB      CHAR(25),
     relation    VARCHAR(30) NOT NULL,
     PRIMARY KEY (IDkodA, IDkodB),
     FOREIGN KEY (IDkodA) REFERENCES Alien(IDkod),
@@ -135,14 +135,20 @@ CREATE TABLE Alien_Relation(
 );
 
 CREATE TABLE Alien_Hemligstämplade_Logg(
-    loggID SMALLINT AUTO_INCREMENT,
-    logg_datum   DATETIME DEFAULT NOW(),
+    loggID      SMALLINT AUTO_INCREMENT,
+    logg_datum  DATETIME DEFAULT NOW(),
     IDkod       CHAR(25),
     rasID       SMALLINT,
-    namn        VARCHAR(30),
-    kännetecken VARCHAR(255) NOT NULL,
-    kommentar   VARCHAR(255),
+    ras_namn    VARCHAR(30),
+    ras_kännetecken VARCHAR(255) NOT NULL,
     PRIMARY KEY (loggID)
+);
+
+CREATE TABLE Alien_Hemligstämplade_Logg_Kommentar(
+    loggID      SMALLINT AUTO_INCREMENT,
+    kommentar   VARCHAR(255),
+    PRIMARY KEY (loggID),
+    FOREIGN KEY (loggID) REFERENCES Alien_Hemligstämplade_Logg(loggID)
 );
 
 CREATE TABLE Kännetecken_Tillhör_Alien (
@@ -299,8 +305,8 @@ CREATE PROCEDURE hemligstämpla_ras_med_id(IN param_rasID SMALLINT)
 
         -- Sparar information om rasen för återskapande senare.
 
-        INSERT INTO Alien_Hemligstämplade_Logg (namn, kännetecken)
-        SELECT a.namn, k.ras_kännetecken
+        INSERT INTO Alien_Hemligstämplade_Logg (ras_namn, ras_kännetecken)
+        SELECT a.ras_namn, k.ras_kännetecken
         FROM Kännetecken_Tillhör_Alien k
         JOIN Alien a ON k.IDkod = a.IDkod
         WHERE a.rasID = param_rasID;
@@ -319,7 +325,7 @@ CREATE PROCEDURE avklassificera(IN param_rasID SMALLINT)
     BEGIN
         -- Återskapar eventuella kännetecken för rasen.
         INSERT IGNORE INTO Kännetecken_Tillhör_Alien (IDkod, ras_kännetecken)
-        SELECT rasID, kännetecken FROM Alien_Hemligstämplade_Logg
+        SELECT rasID, ras_kännetecken FROM Alien_Hemligstämplade_Logg
         WHERE rasID = param_rasID;
 
         -- Återger rasen till alla Aliens med samma ras innan hemligstämplande.
