@@ -28,16 +28,6 @@ INSERT INTO Kännetecken (attribut) VALUES ('Liten'),
                                           ('Söt'),
                                           ('Aggressiv');
 
-CREATE TABLE Ras_Logg(
-    id          SMALLINT AUTO_INCREMENT,
-    logg_tid    DATETIME DEFAULT NOW(),
-    rasID       SMALLINT NOT NULL,
-    namn        VARCHAR(30),
-    kännetecken VARCHAR(255) NOT NULL,
-    kommentar   VARCHAR(255),
-    PRIMARY KEY (id)
-);
-
 CREATE TABLE Alien(
     IDkod       CHAR(25),
     farlighet   TINYINT UNSIGNED DEFAULT 4,
@@ -46,19 +36,6 @@ CREATE TABLE Alien(
     PRIMARY KEY (IDkod),
     FOREIGN KEY (farlighet) REFERENCES Farlighet (id)
 );
-
-CREATE TABLE Kännetecken_Tillhör_Ras(
-    rasID       SMALLINT,
-    kännetecken VARCHAR(30),
-    PRIMARY KEY (rasID, kännetecken),
-    FOREIGN KEY (rasID) REFERENCES Alien(rasID)
-);
-
-INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken) VALUES (2, 'Liten'),
-                                                                (2, 'Aggressiv'),
-                                                                (3, 'Liten'),
-                                                                (3, 'Söt'),
-                                                                (4, 'Grön');
 
 CREATE TABLE Oregistrerad_Alien(
     namn        VARCHAR (30),
@@ -70,6 +47,18 @@ CREATE TABLE Oregistrerad_Alien(
     CONSTRAINT chk_införelsedatum_format
     CHECK ( regexp_like(införelsedatum, '^[0-9]{8}-[0-9]{6}$') )
 );
+
+CREATE PROCEDURE addera_alien(IN new_id CHAR(25))
+    BEGIN
+        INSERT IGNORE INTO Alien (IDkod) VALUES (new_id);
+    END;
+
+CREATE TRIGGER addera_efter_oregistrerad
+    BEFORE INSERT ON Oregistrerad_Alien
+    FOR EACH ROW
+    BEGIN
+        CALL addera_alien(NEW.IDkod);
+    END;
 
 CREATE TRIGGER sätt_datum_oreg_alien
     BEFORE INSERT ON Oregistrerad_Alien
@@ -92,6 +81,13 @@ CREATE TABLE Registrerad_Alien(
     CONSTRAINT chk_pnr_format
     CHECK ( regexp_like(pnr, '^[0-9]{8}-[0-9]{4}$') )
 );
+
+CREATE TRIGGER addera_efter_registrerad
+    BEFORE INSERT ON Registrerad_Alien
+    FOR EACH ROW
+    BEGIN
+        CALL addera_alien(NEW.IDkod);
+    END;
 
 CREATE TABLE Registrerad_Alien_Hemplanet(
     namn        VARCHAR(30),
@@ -138,26 +134,6 @@ CREATE TRIGGER registrera_alien_utan_planet
         INSERT INTO Registrerad_Alien(namn, IDkod, pnr) VALUES (NEW.namn, NEW.IDkod, NEW.pnr);
     END;
 
-
-CREATE PROCEDURE addera_alien(IN new_id CHAR(25))
-    BEGIN
-        INSERT INTO Alien (IDkod) VALUES (new_id);
-    END;
-
-CREATE TRIGGER addera_efter_oregistrerad
-    AFTER INSERT ON Oregistrerad_Alien
-    FOR EACH ROW
-    BEGIN
-        CALL addera_alien(NEW.IDkod);
-    END;
-
-CREATE TRIGGER addera_efter_registrerad
-    AFTER INSERT ON Registrerad_Alien
-    FOR EACH ROW
-    BEGIN
-        CALL addera_alien(NEW.IDkod);
-    END;
-
 -- Relation mellan 2 aliens, vare sig de är reg eller oreg
 -- Kan inte ha foreign keys på grund av vertikal split
 CREATE TABLE Alien_Relation(
@@ -170,18 +146,24 @@ CREATE TABLE Alien_Relation(
 );
 
 CREATE TABLE Alien_Hemligstämplade_Logg(
-    sekretessid SMALLINT AUTO_INCREMENT,
+    loggID SMALLINT AUTO_INCREMENT,
     logg_datum   DATETIME DEFAULT NOW(),
     IDkod       CHAR(25),
     rasID       SMALLINT,
-    PRIMARY KEY (sekretessid)
+    namn        VARCHAR(30),
+    kännetecken VARCHAR(255) NOT NULL,
+    kommentar   VARCHAR(255),
+    PRIMARY KEY (loggID)
 );
 
 CREATE TABLE Kännetecken_Tillhör_Alien (
     IDkod       VARCHAR(25),
-    kännetecken VARCHAR(255),
-    PRIMARY KEY (IDkod, kännetecken),
-    FOREIGN KEY (IDkod) REFERENCES Alien (IDkod)
+    alien_kännetecken VARCHAR(32),
+    ras_kännetecken VARCHAR(32),
+    PRIMARY KEY (IDkod),
+    FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
+    FOREIGN KEY (alien_kännetecken) REFERENCES Kännetecken(attribut),
+    FOREIGN KEY (ras_kännetecken) REFERENCES Kännetecken(attribut)
 );
 
 CREATE TABLE Skepp(
@@ -238,11 +220,11 @@ CREATE TABLE Vapen(
     CONSTRAINT FOREIGN KEY (skepp_id) REFERENCES Skepp (id),
     CONSTRAINT FOREIGN KEY (alien_IDkod) REFERENCES Alien (IDkod),
 
-    -- CHECK som kollar att så att ett fält är tomt. --
+    -- CHECK som kollar att så att ett fält är tomt.
     CONSTRAINT chk_vapen_alienid_skeppid
     CHECK ( alien_IDkod IS NULL OR skepp_id IS NULL ),
 
-    -- CHECK som kollar att ett fält INTE är tomt. --
+    -- CHECK som kollar att ett fält INTE är tomt.
     CONSTRAINT chk_vapen_har_alienid_skeppid
     CHECK ( alien_IDkod IS NOT NULL OR skepp_id IS NOT NULL )
 );
@@ -262,7 +244,7 @@ CREATE TABLE Procedure_Begränsning (
     PRIMARY KEY (användare, procedure_namn)
 );
 
--- Räknar samtliga rader i Vapen OCH relationstabellen Skepp_Alien som en given Alien IDkod förekommer --
+-- Räknar samtliga rader i Vapen OCH relationstabellen Skepp_Alien som en given Alien IDkod förekommer.
 CREATE FUNCTION count_kopplingar(IDkod VARCHAR(25)) RETURNS INT
 DETERMINISTIC
 BEGIN
@@ -274,7 +256,7 @@ BEGIN
     RETURN count;
 END;
 
--- Säkerställer så att Alien inte kan har 15 eller fler kopplingar innan addering av ny rad --
+-- Säkerställer så att Alien inte kan har 15 eller fler kopplingar innan addering av ny rad.
 CREATE TRIGGER chk_kopplingar_skepp
 BEFORE INSERT ON Skepp_Alien
 FOR EACH ROW
@@ -300,7 +282,7 @@ BEGIN
     END IF;
 END;
 
--- Hemligstämplar alla aliens rasfält samt rasen självt på rasID. --
+-- Hemligstämplar alla aliens rasfält samt rasen självt på rasID.
 CREATE PROCEDURE hemligstämpla_ras_med_id(IN param_rasID SMALLINT)
     BEGIN
         -- Loggför aliens med rasen som hemligstämplas. --
@@ -308,28 +290,32 @@ CREATE PROCEDURE hemligstämpla_ras_med_id(IN param_rasID SMALLINT)
         SELECT IDkod, rasID FROM Alien
         WHERE rasID = param_rasID;
 
-        -- Sparar information om rasen för återskapande senare. --
-        INSERT INTO Ras_Logg(rasID, kännetecken)
-        SELECT rasID, kännetecken FROM Kännetecken_Tillhör_Ras
-        WHERE rasID = param_rasID;
+        -- Sparar information om rasen för återskapande senare.
 
-        -- Uppdaterar aliens med param_rasID till 'HEMLIGSTÄMPLAT'. --
+        INSERT INTO Alien_Hemligstämplade_Logg (namn, kännetecken)
+        SELECT a.namn, k.ras_kännetecken
+        FROM Kännetecken_Tillhör_Alien k
+        JOIN Alien a ON k.IDkod = a.IDkod
+        WHERE a.rasID = param_rasID;
+
+        -- Uppdaterar aliens med param_rasID till 'HEMLIGSTÄMPLAT'.
         UPDATE
             Alien
         SET
-            Alien.rasID = 'HEMLIGSTÄMPLAT'
-        WHERE Alien.rasID = param_rasID;
+            rasID = 'HEMLIGSTÄMPLAT'
+        WHERE
+            rasID = param_rasID;
     END;
 
--- Avklassificerar både ras och alien med rasID --
+-- Avklassificerar både ras och alien med rasID.
 CREATE PROCEDURE avklassificera(IN param_rasID SMALLINT)
     BEGIN
-        -- Återskapar eventuella kännetecken för rasen --
-        INSERT IGNORE INTO Kännetecken_Tillhör_Ras (rasID, kännetecken)
-        SELECT rasID, kännetecken FROM Ras_Logg
+        -- Återskapar eventuella kännetecken för rasen.
+        INSERT IGNORE INTO Kännetecken_Tillhör_Alien (IDkod, ras_kännetecken)
+        SELECT rasID, kännetecken FROM Alien_Hemligstämplade_Logg
         WHERE rasID = param_rasID;
 
-        -- Återger rasen till alla Aliens med samma ras innan hemligstämplande --
+        -- Återger rasen till alla Aliens med samma ras innan hemligstämplande.
         UPDATE
             Alien,
             Alien_Hemligstämplade_Logg
@@ -341,12 +327,12 @@ CREATE PROCEDURE avklassificera(IN param_rasID SMALLINT)
 
     END;
 
--- Avklassificerar en specifik Alien --
+-- Avklassificerar en specifik Alien.
 CREATE PROCEDURE avklassificera_alien(IN param_alien_idkod CHAR(25))
     BEGIN
         DECLARE matchning TINYINT;
 
-        -- CHECK så att idkoden är hemligstämplat till att börja med. --
+        -- CHECK så att idkoden är hemligstämplat till att börja med.
         SELECT COUNT(*) INTO matchning
         FROM Alien_Hemligstämplade_Logg
         WHERE IDkod = param_alien_idkod;
@@ -401,7 +387,7 @@ BEGIN
         AND procedure_namn = 'radera_aien';
 
 
-        -- Raderar alla tillhörande kopplingar, raderingen loggas INTE. --
+        -- Raderar alla tillhörande kopplingar, raderingen loggas INTE.
         START TRANSACTION;
 
         DELETE FROM Alien_Hemligstämplade_Logg WHERE IDkod = param_idkod;
@@ -419,7 +405,7 @@ BEGIN
                WHERE IDkodA = param_idkod
                   OR IDkodB = param_idkod;
 
-        -- Raderar den faktiska alien vars IDkod man har fyllt i. --
+        -- Raderar den faktiska alien vars IDkod man har fyllt i.
         DELETE FROM Alien WHERE IDkod = param_idkod;
 
         COMMIT;
@@ -458,7 +444,7 @@ CREATE PROCEDURE radera_skepp (IN rymdskepp_id INT)
             AND procedure_namn = 'radera_aien';
 
 
-            -- Raderar alla tillhörande kopplingar, raderingen loggas INTE. --
+            -- Raderar alla tillhörande kopplingar, raderingen loggas INTE.
             START TRANSACTION;
 
             DELETE FROM Kännetecken_Tillhör_Skepp WHERE id = rymdskepp_id;
@@ -467,7 +453,7 @@ CREATE PROCEDURE radera_skepp (IN rymdskepp_id INT)
 
             DELETE FROM Skepp_Alien WHERE skepp_id = rymdskepp_id;
 
-            -- Raderar det faktiska skeppet vars id man har fyllt i. --
+            -- Raderar det faktiska skeppet vars id man har fyllt i.
             DELETE FROM Skepp WHERE id = rymdskepp_id;
 
             COMMIT;
