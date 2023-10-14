@@ -38,7 +38,7 @@ CREATE TABLE Ras_Logg(
     PRIMARY KEY (id)
 );
 
-CREATE TABLE Merged_Ras_Alien(
+CREATE TABLE Alien(
     IDkod       CHAR(25),
     farlighet   TINYINT UNSIGNED DEFAULT 4,
     rasID       SMALLINT DEFAULT 1,
@@ -51,7 +51,7 @@ CREATE TABLE Kännetecken_Tillhör_Ras(
     rasID       SMALLINT,
     kännetecken VARCHAR(30),
     PRIMARY KEY (rasID, kännetecken),
-    FOREIGN KEY (rasID) REFERENCES Merged_Ras_Alien(rasID)
+    FOREIGN KEY (rasID) REFERENCES Alien(rasID)
 );
 
 INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken) VALUES (2, 'Liten'),
