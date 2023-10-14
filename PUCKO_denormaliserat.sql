@@ -22,6 +22,8 @@ CREATE TABLE Alien(
     FOREIGN KEY (farlighet) REFERENCES Farlighet (id)
 );
 
+CREATE INDEX alien_rasnamn_index ON Alien (ras_namn ASC) USING BTREE;
+
 CREATE TABLE Kännetecken_Tillhör_Alien (
     IDkod       CHAR(25),
     alien_kännetecken VARCHAR(32),
@@ -31,8 +33,6 @@ CREATE TABLE Kännetecken_Tillhör_Alien (
     FOREIGN KEY (alien_kännetecken) REFERENCES Kännetecken(attribut),
     FOREIGN KEY (ras_kännetecken) REFERENCES Kännetecken(attribut)
 );
-
-CREATE INDEX alien_rasnamn_index ON Alien (ras_namn ASC) USING BTREE;
 
 CREATE TABLE Oregistrerad_Alien(
     namn        VARCHAR (30),
