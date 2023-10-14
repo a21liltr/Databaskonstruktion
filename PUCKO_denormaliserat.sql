@@ -28,33 +28,9 @@ INSERT INTO Kännetecken (attribut) VALUES ('Liten'),
                                           ('Söt'),
                                           ('Aggressiv');
 
-CREATE TABLE Ras(
-    rasID      SMALLINT AUTO_INCREMENT,
-    namn        VARCHAR(30) UNIQUE,
-    PRIMARY KEY (rasID)
-);
-
-INSERT INTO Ras (namn) VALUES ('Okänt'),
-                              ('Chihuahua'),
-                              ('Tax'),
-                              ('Gröngöling');
-
-CREATE TABLE Kännetecken_Tillhör_Ras(
-    rasID       SMALLINT,
-    kännetecken VARCHAR(30),
-    PRIMARY KEY (rasID, kännetecken),
-    FOREIGN KEY (rasID) REFERENCES Ras(rasID)
-);
-
-INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken) VALUES (2, 'Liten'),
-                                                                (2, 'Aggressiv'),
-                                                                (3, 'Liten'),
-                                                                (3, 'Söt'),
-                                                                (4, 'Grön');
-
 CREATE TABLE Ras_Logg(
-    id          SMALLINT NOT NULL AUTO_INCREMENT,
-    logg_tid    DATETIME NOT NULL DEFAULT NOW(),
+    id          SMALLINT AUTO_INCREMENT,
+    logg_tid    DATETIME DEFAULT NOW(),
     rasID       SMALLINT NOT NULL,
     namn        VARCHAR(30),
     kännetecken VARCHAR(255) NOT NULL,
@@ -62,17 +38,27 @@ CREATE TABLE Ras_Logg(
     PRIMARY KEY (id)
 );
 
-CREATE TABLE Alien(
+CREATE TABLE Merged_Ras_Alien(
     IDkod       CHAR(25),
     farlighet   TINYINT UNSIGNED DEFAULT 4,
     rasID       SMALLINT DEFAULT 1,
+    namn        VARCHAR(30),
     PRIMARY KEY (IDkod),
-    FOREIGN KEY (farlighet) REFERENCES Farlighet (id),
-    FOREIGN KEY (rasID) REFERENCES Ras (rasID)
+    FOREIGN KEY (farlighet) REFERENCES Farlighet (id)
 );
-INSERT INTO Alien (IDkod, rasID) VALUES (1111, 2),
-                                        (2222, 3),
-                                        (3333, 4);
+
+CREATE TABLE Kännetecken_Tillhör_Ras(
+    rasID       SMALLINT,
+    kännetecken VARCHAR(30),
+    PRIMARY KEY (rasID, kännetecken),
+    FOREIGN KEY (rasID) REFERENCES Merged_Ras_Alien(rasID)
+);
+
+INSERT INTO Kännetecken_Tillhör_Ras (rasID, kännetecken) VALUES (2, 'Liten'),
+                                                                (2, 'Aggressiv'),
+                                                                (3, 'Liten'),
+                                                                (3, 'Söt'),
+                                                                (4, 'Grön');
 
 CREATE TABLE Oregistrerad_Alien(
     namn        VARCHAR (30),
@@ -184,7 +170,7 @@ CREATE TABLE Alien_Relation(
 );
 
 CREATE TABLE Alien_Hemligstämplade_Logg(
-    sekretessid SMALLINT NOT NULL AUTO_INCREMENT,
+    sekretessid SMALLINT AUTO_INCREMENT,
     logg_datum   DATETIME DEFAULT NOW(),
     IDkod       CHAR(25),
     rasID       SMALLINT,
@@ -193,7 +179,7 @@ CREATE TABLE Alien_Hemligstämplade_Logg(
 
 CREATE TABLE Kännetecken_Tillhör_Alien (
     IDkod       VARCHAR(25),
-    kännetecken VARCHAR(255) NOT NULL,
+    kännetecken VARCHAR(255),
     PRIMARY KEY (IDkod, kännetecken),
     FOREIGN KEY (IDkod) REFERENCES Alien (IDkod)
 );
@@ -227,8 +213,8 @@ BEGIN
 END;
 
 CREATE TABLE Kännetecken_Tillhör_Skepp (
-    id          INT NOT NULL,
-    kännetecken VARCHAR(30) NOT NULL,
+    id          INT,
+    kännetecken VARCHAR(30),
     PRIMARY KEY (id, kännetecken),
     FOREIGN KEY (id) REFERENCES Skepp (id)
 );
@@ -269,8 +255,8 @@ CREATE TABLE Vapen_Inköpsplatser(
 );
 
 CREATE TABLE Procedure_Begränsning (
-    användare       VARCHAR(50) NOT NULL,
-    procedure_namn  VARCHAR(50) NOT NULL,
+    användare       VARCHAR(50),
+    procedure_namn  VARCHAR(50),
     antal_användningar  TINYINT UNSIGNED NULL DEFAULT 0,
     begränsning     TINYINT UNSIGNED DEFAULT 3,
     PRIMARY KEY (användare, procedure_namn)
@@ -317,19 +303,6 @@ END;
 -- Hemligstämplar alla aliens rasfält samt rasen självt på rasID. --
 CREATE PROCEDURE hemligstämpla_ras_med_id(IN param_rasID SMALLINT)
     BEGIN
-        DECLARE existerar SMALLINT;
-
-        -- Kollar om 'Hemligstämplat redan existerar. --
-        SELECT COUNT(*) INTO existerar
-        FROM Ras
-        WHERE namn = 'HEMLIGSTÄMPLAT';
-
-        IF existerar = 0 THEN
-            -- Skapar 'HEMLIGSTÄMPLAT' om den inte redan finns. --
-            INSERT INTO Ras (namn)
-            VALUES ('HEMLIGSTÄMPLAT');
-        END IF;
-
         -- Loggför aliens med rasen som hemligstämplas. --
         INSERT INTO Alien_Hemligstämplade_Logg(IDkod, rasID)
         SELECT IDkod, rasID FROM Alien
@@ -340,25 +313,17 @@ CREATE PROCEDURE hemligstämpla_ras_med_id(IN param_rasID SMALLINT)
         SELECT rasID, kännetecken FROM Kännetecken_Tillhör_Ras
         WHERE rasID = param_rasID;
 
-        -- Uppdaterar aliens med rasen till 'HEMLIGSTÄMPLAT'. --
+        -- Uppdaterar aliens med param_rasID till 'HEMLIGSTÄMPLAT'. --
         UPDATE
-            Alien,
-            Ras
+            Alien
         SET
-            Alien.rasID = Ras.rasID
-        WHERE Ras.rasID = param_rasID;
-
-        DELETE FROM Ras WHERE rasID = param_rasID;
+            Alien.rasID = 'HEMLIGSTÄMPLAT'
+        WHERE Alien.rasID = param_rasID;
     END;
 
 -- Avklassificerar både ras och alien med rasID --
 CREATE PROCEDURE avklassificera(IN param_rasID SMALLINT)
     BEGIN
-        -- Insertar så länge rasen inte redan finns med --
-        INSERT IGNORE INTO Ras (rasID, namn)
-        SELECT rasID, namn FROM Ras_Logg
-        WHERE Ras_Logg.rasID = param_rasID;
-
         -- Återskapar eventuella kännetecken för rasen --
         INSERT IGNORE INTO Kännetecken_Tillhör_Ras (rasID, kännetecken)
         SELECT rasID, kännetecken FROM Ras_Logg
@@ -527,7 +492,6 @@ CREATE PROCEDURE ändra_begränsning (IN agent VARCHAR(50), IN kommando VARCHAR(
 
 -- Skapar olika USERS för databasen med specifika rättigheter beroende på USER typ.
 CREATE USER IF NOT EXISTS 'a21liltr_agent'@'%' IDENTIFIED BY 'foo';
-GRANT SELECT ON a21liltr.Ras TO 'a21liltr_agent'@'%';
 GRANT EXECUTE ON PROCEDURE a21liltr.radera_alien TO 'a21liltr_agent'@'%';
 
 CREATE USER IF NOT EXISTS 'a21liltr_administratör'@'%' IDENTIFIED BY 'bar';
