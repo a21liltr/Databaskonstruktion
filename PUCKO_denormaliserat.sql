@@ -8,25 +8,10 @@ CREATE TABLE Farlighet(
     PRIMARY KEY (id)
 );
 
-INSERT INTO Farlighet(grad)
-VALUES ('Harmlös'),
-       ('Halvt harmlös'),
-       ('Ofarlig'),
-       ('Neutral'),
-       ('Svagt farlig'),
-       ('Farlig'),
-       ('Extremt farlig'),
-       ('Spring för livet');
-
 CREATE TABLE Kännetecken(
     attribut    VARCHAR(30),
     PRIMARY KEY (attribut)
 );
-
-INSERT INTO Kännetecken (attribut) VALUES ('Liten'),
-                                          ('Grön'),
-                                          ('Söt'),
-                                          ('Aggressiv');
 
 CREATE TABLE Alien(
     IDkod       CHAR(25),
@@ -35,6 +20,16 @@ CREATE TABLE Alien(
     ras_namn    VARCHAR(30),
     PRIMARY KEY (IDkod),
     FOREIGN KEY (farlighet) REFERENCES Farlighet (id)
+);
+
+CREATE TABLE Kännetecken_Tillhör_Alien (
+    IDkod       CHAR(25),
+    alien_kännetecken VARCHAR(32),
+    ras_kännetecken VARCHAR(32),
+    PRIMARY KEY (IDkod),
+    FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
+    FOREIGN KEY (alien_kännetecken) REFERENCES Kännetecken(attribut),
+    FOREIGN KEY (ras_kännetecken) REFERENCES Kännetecken(attribut)
 );
 
 CREATE INDEX alien_rasnamn_index ON Alien (ras_namn ASC) USING BTREE;
@@ -70,8 +65,6 @@ CREATE TRIGGER sätt_datum_oreg_alien
             SET NEW.införelsedatum = CONCAT(DATE_FORMAT(NOW(), '%Y%m%d-'), DATE_FORMAT(NOW(), '%H%i%s'));
         END IF;
     END;
-
-INSERT INTO Oregistrerad_Alien (IDkod, namn) VALUES (1111, 'Okänd');
 
 CREATE TABLE Registrerad_Alien(
     namn        VARCHAR(30),
@@ -114,9 +107,6 @@ CREATE TRIGGER sätt_datum_reg_alien
         END IF;
     END;
 
-INSERT INTO Registrerad_Alien (IDkod, namn, hemplanet) VALUES (2222, 'Torbjörn', 'MWDXACJA');
-INSERT INTO Registrerad_Alien (IDkod, namn, hemplanet) VALUES (3333, 'Bert', 'I2OJNLW9');
-
 CREATE TABLE Alien_Relation(
     IDkodA      CHAR(25),
     IDkodB      CHAR(25),
@@ -143,16 +133,6 @@ CREATE TABLE Alien_Hemligstämplade_Logg_Kommentar(
     kommentar   VARCHAR(255),
     PRIMARY KEY (loggID),
     FOREIGN KEY (loggID) REFERENCES Alien_Hemligstämplade_Logg(loggID)
-);
-
-CREATE TABLE Kännetecken_Tillhör_Alien (
-    IDkod       CHAR(25),
-    alien_kännetecken VARCHAR(32),
-    ras_kännetecken VARCHAR(32),
-    PRIMARY KEY (IDkod),
-    FOREIGN KEY (IDkod) REFERENCES Alien (IDkod),
-    FOREIGN KEY (alien_kännetecken) REFERENCES Kännetecken(attribut),
-    FOREIGN KEY (ras_kännetecken) REFERENCES Kännetecken(attribut)
 );
 
 CREATE TABLE Skepp(
@@ -492,12 +472,6 @@ GRANT SELECT ON mysql.user TO 'a21liltr_administratör'@'%';
 GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_begränsning TO 'a21liltr_administratör'@'%';
 GRANT EXECUTE ON PROCEDURE a21liltr.ändra_begränsning TO 'a21liltr_administratör'@'%';
 
-INSERT INTO Kännetecken_Tillhör_Alien (IDkod, alien_kännetecken, ras_kännetecken)
-VALUES (2222, 'Liten', 'Söt');
-
-INSERT INTO Skepp (id, sittplatser) VALUES (1212, 4),
-                                           (5656, 8);
-
 -- Förenklad vy för att kunna få en överblick över alla 'personnummer' på registrerade aliens,
 -- samt införelsedatum i databasen (som även dessa kommer stå under 'personnummer') för oregistrerade aliens,
 -- dvs en överblick över alla registrerade och oregistrerade aliens i en tabell.
@@ -518,14 +492,6 @@ UNION
 SELECT id AS 'ID', kännetecken AS 'Kännetecken'
 FROM Kännetecken_Tillhör_Skepp;
 
-UPDATE Alien
-SET ras_namn = 'test'
-WHERE IDkod = 1111;
-
-UPDATE Alien
-SET ras_namn = 'HEMLIGSTÄMPLAT'
-WHERE IDkod = 2222;
-
 -- Här kan en användare med lägre auktorisation se en vy över aliens som inte är hemligstämplade.
 -- Det kan vara så att enbart agenter med högre auktoritet som får se aliens med hemligstämplade raser.
 -- I annat fall kan det även vara bra för att se vilka aliens som inte är hemligstämplade ännu...
@@ -545,7 +511,8 @@ GROUP BY ras_namn;
 CREATE VIEW Nått_Begränsning_view AS
 SELECT användare AS 'USER', antal_användningar AS 'ANVÄNDNINGAR', begränsning 'GRÄNS', procedure_namn
 FROM Procedure_Begränsning
-WHERE antal_användningar = begränsning;
+WHERE antal_användningar = begränsning
+ORDER BY användare;
 
 -- Här kan man se agenternas medelvärde på användningarna av procedurer.
 CREATE VIEW AVG_Användning_view AS
