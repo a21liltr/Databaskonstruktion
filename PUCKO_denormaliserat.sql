@@ -3,8 +3,8 @@ CREATE DATABASE IF NOT EXISTS a21liltr;
 USE a21liltr;
 
 CREATE TABLE Farlighet(
-    farlighet_id          TINYINT UNSIGNED AUTO_INCREMENT,
-    grad        VARCHAR(16) UNIQUE,
+    farlighet_id    TINYINT UNSIGNED AUTO_INCREMENT,
+    grad            VARCHAR(16) UNIQUE,
     PRIMARY KEY (farlighet_id)
 );
 
@@ -16,7 +16,7 @@ CREATE TABLE Kännetecken(
 CREATE TABLE Alien(
     alien_id    CHAR(25),
     farlighet   TINYINT UNSIGNED DEFAULT 4,
-    ras_id      SMALLINT DEFAULT 1,
+    ras_id      SMALLINT UNSIGNED,
     ras_namn    VARCHAR(30),
     PRIMARY KEY (alien_id),
     FOREIGN KEY (farlighet) REFERENCES Farlighet (farlighet_id),
@@ -26,8 +26,8 @@ CREATE TABLE Alien(
 CREATE INDEX alien_rasnamn_index ON Alien (ras_namn ASC) USING BTREE;
 
 CREATE TABLE Oregistrerad_Alien(
-    namn           VARCHAR (30),
     alien_id       CHAR(25),
+    namn           VARCHAR (30),
     införelsedatum CHAR(15),
     PRIMARY KEY (alien_id),
     FOREIGN KEY (alien_id) REFERENCES Alien (alien_id),
@@ -58,8 +58,8 @@ CREATE TRIGGER sätt_datum_oreg_alien
     END;
 
 CREATE TABLE Registrerad_Alien(
+    alien_id    CHAR(25),
     namn        VARCHAR(30),
-    alien_id       CHAR(25),
     pnr         CHAR(13) UNIQUE,
     hemplanet   VARCHAR(30) NOT NULL,
     PRIMARY KEY (alien_id),
@@ -73,11 +73,30 @@ CREATE TRIGGER addera_registrerad
     BEFORE INSERT ON Registrerad_Alien
     FOR EACH ROW
     BEGIN
+        DECLARE ny_id SMALLINT;
+        DECLARE ny_ras VARCHAR(30);
+        DECLARE sparade_raser SMALLINT;
+
         CALL addera_alien(NEW.alien_id);
         IF NEW.hemplanet IS NOT NULL OR NEW.hemplanet <> '' THEN
             UPDATE Alien
             SET ras_namn = CONCAT(NEW.hemplanet, 'ian')
             WHERE Alien.alien_id = NEW.alien_id;
+
+            SET ny_ras = CONCAT(NEW.hemplanet, 'ian');
+
+            SELECT ras_id INTO ny_id FROM Alien WHERE ras_namn = ny_ras LIMIT 1;
+            SELECT COUNT(DISTINCT ras_namn) INTO sparade_raser FROM Alien;
+
+            IF ny_id IS NULL OR ny_id = '' THEN
+                UPDATE Alien
+                SET ras_id = sparade_raser
+                WHERE alien_id = NEW.alien_id;
+            ELSE
+                UPDATE Alien
+                SET ras_id = ny_ras
+                WHERE alien_id = NEW.alien_id;
+            END IF;
         END IF;
     END;
 
@@ -104,8 +123,8 @@ CREATE TRIGGER sätt_datum_reg_alien
     END;
 
 CREATE TABLE Alien_Relation(
-    alien_idA      CHAR(25),
-    alien_idB      CHAR(25),
+    alien_idA   CHAR(25),
+    alien_idB   CHAR(25),
     relation    VARCHAR(30) NOT NULL,
     PRIMARY KEY (alien_idA, alien_idB),
     FOREIGN KEY (alien_idA) REFERENCES Alien(alien_id),
@@ -113,7 +132,7 @@ CREATE TABLE Alien_Relation(
 );
 
 CREATE TABLE Skepp(
-    skepp_id          INT,
+    skepp_id    INT,
     sittplatser INT,
     tillverkningsplanet VARCHAR(30),
     tillverkat  DATE,
@@ -139,17 +158,17 @@ BEGIN
     END IF;
 END;
 
-CREATE TABLE Skepp_Alien(
+CREATE TABLE Skepp_Alien_Relation(
     skepp_id    INT,
-    alien_id VARCHAR(25),
+    alien_id    CHAR(25),
     PRIMARY KEY (skepp_id, alien_id),
     FOREIGN KEY (skepp_id) REFERENCES Skepp(skepp_id),
     FOREIGN KEY (alien_id) REFERENCES Alien(alien_id)
 );
 
 CREATE TABLE Kännetecken_Tillhör_Ras(
-    alien_id       CHAR(25),
-    ras_ID       SMALLINT DEFAULT 1,
+    alien_id    CHAR(25),
+    ras_ID      SMALLINT UNSIGNED,
     kännetecken VARCHAR(32),
     PRIMARY KEY (alien_id, ras_id, kännetecken),
     FOREIGN KEY (alien_id, ras_id) REFERENCES Alien (alien_id, ras_id),
@@ -157,7 +176,7 @@ CREATE TABLE Kännetecken_Tillhör_Ras(
 );
 
 CREATE TABLE Kännetecken_Tillhör_Alien (
-    alien_id       CHAR(25),
+    alien_id    CHAR(25),
     kännetecken VARCHAR(32),
     PRIMARY KEY (alien_id, kännetecken),
     FOREIGN KEY (alien_id) REFERENCES Alien (alien_id),
@@ -165,7 +184,7 @@ CREATE TABLE Kännetecken_Tillhör_Alien (
 );
 
 CREATE TABLE Kännetecken_Tillhör_Skepp (
-    skepp_id          INT,
+    skepp_id    INT,
     kännetecken VARCHAR(30),
     PRIMARY KEY (skepp_id, kännetecken),
     FOREIGN KEY (skepp_id) REFERENCES Skepp (skepp_id),
@@ -176,7 +195,7 @@ CREATE TABLE Vapen(
     vapen_id    INT,
     tillverkat  DATE,
     farlighet   TINYINT UNSIGNED DEFAULT 4,
-    alien_id    VARCHAR(25),
+    alien_id    CHAR(25),
     skepp_id    INT,
     PRIMARY KEY (vapen_id),
     FOREIGN KEY (farlighet) REFERENCES Farlighet (farlighet_id),
@@ -194,7 +213,7 @@ CREATE TABLE Vapen(
 
 CREATE TABLE Vapen_Ägare(
     vapen_id    INT,
-    alien_id    VARCHAR(25),
+    alien_id    CHAR(25),
     skepp_id    INT,
     PRIMARY KEY (vapen_id),
     CONSTRAINT FOREIGN KEY (skepp_id) REFERENCES Skepp (skepp_id),
@@ -229,7 +248,7 @@ CREATE TABLE Hemligstämplat_Logg
     loggID      SMALLINT AUTO_INCREMENT,
     logg_datum  DATETIME DEFAULT NOW(),
     alien_id    CHAR(25),
-    ras_id      SMALLINT,
+    ras_id      SMALLINT UNSIGNED,
     ras_namn    VARCHAR(30),
     ras_kännetecken VARCHAR(255) NOT NULL,
     PRIMARY KEY (loggID)
@@ -245,21 +264,22 @@ CREATE TABLE Hemligstämplat_Logg_Kommentar
     FOREIGN KEY (loggID) REFERENCES Hemligstämplat_Logg (loggID)
 );
 
--- Räknar samtliga rader i Vapen OCH relationstabellen Skepp_Alien som en given Alien alien_id förekommer.
+-- Räknar samtliga rader i Vapen OCH relationstabellen Skepp_Alien som en given alien_id förekommer.
+-- Returnerar antalet rader i tabellerna med koppling till given alien_id.
 CREATE FUNCTION count_kopplingar(alien_id VARCHAR(25)) RETURNS INT
 DETERMINISTIC
 BEGIN
     DECLARE count INT;
     SELECT COUNT(*) INTO count
-    FROM Skepp_Alien
-    JOIN Vapen ON Skepp_Alien.alien_id = Vapen.alien_id
-    WHERE Skepp_Alien.alien_id = alien_id;
+    FROM Skepp_Alien_Relation
+    JOIN Vapen ON Skepp_Alien_Relation.alien_id = Vapen.alien_id
+    WHERE Skepp_Alien_Relation.alien_id = alien_id;
     RETURN count;
 END;
 
 -- Säkerställer så att Alien inte kan har 15 eller fler kopplingar innan addering av ny rad.
 CREATE TRIGGER chk_kopplingar_skepp
-BEFORE INSERT ON Skepp_Alien
+BEFORE INSERT ON Skepp_Alien_Relation
 FOR EACH ROW
 BEGIN
     DECLARE kopplingar INT;
@@ -397,7 +417,7 @@ BEGIN
 
         DELETE FROM Vapen_Ägare WHERE alien_id = param_alien_id;
 
-        DELETE FROM Skepp_Alien WHERE alien_id = param_alien_id;
+        DELETE FROM Skepp_Alien_Relation WHERE alien_id = param_alien_id;
 
         DELETE FROM Oregistrerad_Alien WHERE alien_id = param_alien_id;
         DELETE FROM Registrerad_Alien WHERE alien_id = param_alien_id;
@@ -451,7 +471,7 @@ CREATE PROCEDURE radera_skepp (IN rymdskepp_id INT)
 
             DELETE FROM Vapen WHERE skepp_id = rymdskepp_id;
 
-            DELETE FROM Skepp_Alien WHERE skepp_id = rymdskepp_id;
+            DELETE FROM Skepp_Alien_Relation WHERE skepp_id = rymdskepp_id;
 
             -- Raderar det faktiska skeppet vars id man har fyllt i.
             DELETE FROM Skepp WHERE skepp_id = rymdskepp_id;
@@ -466,6 +486,19 @@ CREATE PROCEDURE nollställ_begränsning (IN agent VARCHAR(50), IN kommando VARC
         SET användningar = 0
         WHERE användare = agent
         AND procedure_namn = kommando;
+    END;
+
+CREATE PROCEDURE nollställ_alla_maxade (OUT resultat TEXT)
+    BEGIN
+        -- Hämtar alla som har nått sin maxgräns och sätter in i 'resultat'.
+        SELECT GROUP_CONCAT(användare SEPARATOR ', ') INTO resultat
+        FROM Procedure_Begränsning
+        WHERE användningar >= begränsning;
+
+        -- Det är samma personer som i resultat som kommer att få sina användningar nollställt.
+        UPDATE Procedure_Begränsning
+        SET användningar = 0
+        WHERE användningar = begränsning;
     END;
 
 CREATE PROCEDURE ändra_begränsning (IN agent VARCHAR(50), IN kommando VARCHAR(50), IN gräns TINYINT)
