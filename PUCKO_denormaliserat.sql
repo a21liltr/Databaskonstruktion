@@ -547,8 +547,3 @@ CREATE VIEW AVG_Användning_view AS
 SELECT procedure_namn, AVG(användningar)
 FROM Procedure_Begränsning
 GROUP BY procedure_namn;
-
-
-
-
-

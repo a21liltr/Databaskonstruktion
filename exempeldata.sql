@@ -28,20 +28,16 @@ INSERT INTO Oregistrerad_Alien (alien_id, namn) VALUES (1111, 'Åsa'),
 SELECT * FROM Alien;
 
 INSERT INTO Registrerad_Alien (alien_id, namn, hemplanet)
-    VALUES (2222, 'Torbjörn', 'MWDXACJA');
-INSERT INTO Registrerad_Alien (alien_id, namn, hemplanet)
-    VALUES (3333, 'Bert', 'Ixion');
-INSERT INTO Registrerad_Alien (alien_id, namn, hemplanet)
-    VALUES (4444, 'Märta', 'Mars');
-INSERT INTO Registrerad_Alien (alien_id, namn, hemplanet)
-    VALUES (1010, 'Duplication', 'Ixion');
-INSERT INTO Registrerad_Alien (alien_id, namn, hemplanet)
-    VALUES (1020, 'Kopia 2', 'Ixion');
+    VALUES (2222, 'Torbjörn', 'MWDXACJA'),
+           (3333, 'Bert', 'Ixion'),
+           (4444, 'Märta', 'Mars'),
+           (1010, 'Ove', 'Ixion');
 
-INSERT INTO Alien_Relation (alien_idA, alien_idB, relation) VALUES (1111, 4444, 'Gifta'),
-                                                             (1111, 2222, 'Syskon'),
-                                                             (7777, 3333, 'Kollegor'),
-                                                             (7777, 4444, 'Fiender');
+INSERT INTO Alien_Relation (alien_idA, alien_idB, relation)
+    VALUES (1111, 4444, 'Gifta'),
+           (1111, 2222, 'Syskon'),
+           (7777, 3333, 'Kollegor'),
+           (7777, 4444, 'Fiender');
 
 INSERT INTO Skepp (skepp_id, sittplatser) VALUES (1212, 4),
                                                  (5656, 8);
@@ -62,6 +58,9 @@ VALUES (1, NOW(), 2, 9999);
 
 INSERT INTO Vapen_Ägare (vapen_id, alien_id)
 VALUES (1, 9999);
+
+SELECT * FROM Alien;
+SELECT * FROM Registrerad_Alien;
 
 
 
