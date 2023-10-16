@@ -4,7 +4,7 @@ USE a21liltr;
 
 CREATE TABLE användare (
     id  INT AUTO_INCREMENT,
-    användare   VARCHAR(50) NOT NULL,
+    användarnamn   VARCHAR(50) NOT NULL,
     lösenord    VARCHAR(100) NOT NULL,
     roll        VARCHAR(32) NOT NULL,
     PRIMARY KEY (id)
@@ -577,33 +577,6 @@ CREATE PROCEDURE ändra_begränsning (IN agent VARCHAR(50), IN kommando VARCHAR(
         AND procedure_namn = kommando;
     END;
 
--- Skapar olika USERS för databasen med specifika rättigheter beroende på USER typ.
-CREATE USER IF NOT EXISTS 'a21liltr_agent'@'%' IDENTIFIED BY 'foo';
-CREATE USER IF NOT EXISTS 'a21liltr_administratör'@'%' IDENTIFIED BY 'bar';
-
-INSERT INTO användare (användare, lösenord, roll) VALUES ('agent', 'foo', 'agent'),
-                                                         ('administratör', 'bar', 'administratör');
-
--- Rättigheter till en "vanlig" agent.
-GRANT EXECUTE ON PROCEDURE a21liltr.radera_alien TO 'a21liltr_agent'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.radera_skepp TO 'a21liltr_agent'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera TO 'a21liltr_agent'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera_alien TO 'a21liltr_agent'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.hemligstämpla_på_ras_namn TO 'a21liltr_agent'@'%';
-
--- Rättigheter till en agent (administratör) med högre auktoritet.
-GRANT EXECUTE ON PROCEDURE a21liltr.radera_alien TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.radera_skepp TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera_alien TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.hemligstämpla_på_ras_namn TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_begränsning TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_alla_maxade TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.ändra_begränsning TO 'a21liltr_administratör'@'%';
-
--- Laddar om så att användarna får sina rättigheter.
-FLUSH PRIVILEGES;
-
 -- Förenklad vy för att kunna få en överblick över alla 'personnummer' på registrerade aliens,
 -- samt införelsedatum i databasen (som även dessa kommer stå under 'personnummer') för oregistrerade aliens,
 -- dvs en överblick över alla registrerade och oregistrerade aliens i en tabell.
@@ -622,7 +595,7 @@ SELECT alien_id AS 'ID', kännetecken AS 'Kännetecken'
 FROM Kännetecken_Tillhör_Alien
 UNION
 SELECT skepp_id AS 'ID', kännetecken AS 'Kännetecken'
-FROM Kännetecken_Tillhör_Skepp;
+FROM Kännetecken_Tillhör_Skepp ORDER BY ID;
 
 -- Här kan en användare med lägre auktorisation se en vy över aliens som inte är hemligstämplade.
 -- Det kan vara så att enbart agenter med högre auktoritet som får se aliens med hemligstämplade raser.
@@ -651,3 +624,41 @@ CREATE VIEW AVG_Användning_view AS
 SELECT procedure_namn, AVG(användningar)
 FROM Procedure_Begränsning
 GROUP BY procedure_namn;
+
+-- Skapar olika USERS för databasen med specifika rättigheter beroende på USER typ.
+CREATE USER IF NOT EXISTS 'a21liltr_agent'@'%' IDENTIFIED BY 'foo';
+CREATE USER IF NOT EXISTS 'a21liltr_administratör'@'%' IDENTIFIED BY 'bar';
+
+INSERT INTO användare (användarnamn, lösenord, roll) VALUES ('agent', 'foo', 'agent'),
+                                                         ('administratör', 'bar', 'administratör');
+
+-- Rättigheter till en "vanlig" agent.
+GRANT EXECUTE ON PROCEDURE a21liltr.radera_alien TO 'a21liltr_agent'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.radera_skepp TO 'a21liltr_agent'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera TO 'a21liltr_agent'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera_alien TO 'a21liltr_agent'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.hemligstämpla_på_ras_namn TO 'a21liltr_agent'@'%';
+GRANT SELECT ON a21liltr.Alien_Personnummer_view TO 'a21liltr_agent'@'%';
+GRANT SELECT ON a21liltr.Offentliga_Raser_view TO 'a21liltr_agent'@'%';
+GRANT SELECT ON a21liltr.Hemliga_Aliens_view TO 'a21liltr_agent'@'%';
+GRANT SELECT ON a21liltr.Kännetecken_Entitet_view TO 'a21liltr_agent'@'%';
+
+
+-- Rättigheter till en agent (administratör) med högre auktoritet.
+GRANT EXECUTE ON PROCEDURE a21liltr.radera_alien TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.radera_skepp TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera_alien TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.hemligstämpla_på_ras_namn TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_begränsning TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_alla_maxade TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.ändra_begränsning TO 'a21liltr_administratör'@'%';
+GRANT SELECT ON a21liltr.Alien_Personnummer_view TO 'a21liltr_administratör'@'%';
+GRANT SELECT ON a21liltr.Offentliga_Raser_view TO 'a21liltr_administratör'@'%';
+GRANT SELECT ON a21liltr.Hemliga_Aliens_view TO 'a21liltr_administratör'@'%';
+GRANT SELECT ON a21liltr.Kännetecken_Entitet_view TO 'a21liltr_administratör'@'%';
+GRANT SELECT ON a21liltr.Nått_Begränsning_view TO 'a21liltr_administratör'@'%';
+GRANT SELECT ON a21liltr.AVG_Användning_view TO 'a21liltr_administratör'@'%';
+
+-- Laddar om så att användarna får sina rättigheter.
+FLUSH PRIVILEGES;
