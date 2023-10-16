@@ -152,7 +152,7 @@ CREATE TABLE Skepp_Alien_Relation(
 
 CREATE TABLE Kännetecken_Tillhör_Ras(
     alien_id    CHAR(25),
-    ras_namn    SMALLINT UNSIGNED,
+    ras_namn    VARCHAR(30),
     kännetecken VARCHAR(32),
     PRIMARY KEY (alien_id, ras_namn, kännetecken),
     FOREIGN KEY (alien_id, ras_namn) REFERENCES Alien (alien_id, ras_namn),
