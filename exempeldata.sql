@@ -70,12 +70,9 @@ INSERT INTO Procedure_Begränsning (användare, procedure_namn, användningar, b
 
 CALL nollställ_alla_maxade(@result);
 SELECT @result;
-SELECT * FROM Nått_Begränsning_view;
 
+SELECT * FROM Nått_Begränsning_view;
 SELECT * FROM Alien;
 SELECT * FROM Registrerad_Alien;
-
-
-drop procedure nollställ_alla_maxade;
 
 
