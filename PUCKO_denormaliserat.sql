@@ -16,11 +16,10 @@ CREATE TABLE Kännetecken(
 CREATE TABLE Alien(
     alien_id    CHAR(25),
     farlighet   TINYINT UNSIGNED DEFAULT 4,
-    ras_id      SMALLINT UNSIGNED,
     ras_namn    VARCHAR(30),
     PRIMARY KEY (alien_id),
     FOREIGN KEY (farlighet) REFERENCES Farlighet (farlighet_id),
-    UNIQUE (alien_id, ras_id)
+    UNIQUE (alien_id, ras_namn)
 );
 
 CREATE INDEX alien_rasnamn_index ON Alien (ras_namn ASC) USING BTREE;
@@ -82,21 +81,6 @@ CREATE TRIGGER addera_registrerad
             UPDATE Alien
             SET ras_namn = CONCAT(NEW.hemplanet, 'ian')
             WHERE Alien.alien_id = NEW.alien_id;
-
-            SET ny_ras = CONCAT(NEW.hemplanet, 'ian');
-
-            SELECT ras_id INTO ny_id FROM Alien WHERE ras_namn = ny_ras LIMIT 1;
-            SELECT COUNT(DISTINCT ras_namn) INTO sparade_raser FROM Alien;
-
-            IF ny_id IS NULL OR ny_id = '' THEN
-                UPDATE Alien
-                SET ras_id = sparade_raser
-                WHERE alien_id = NEW.alien_id;
-            ELSE
-                UPDATE Alien
-                SET ras_id = ny_ras
-                WHERE alien_id = NEW.alien_id;
-            END IF;
         END IF;
     END;
 
@@ -168,10 +152,10 @@ CREATE TABLE Skepp_Alien_Relation(
 
 CREATE TABLE Kännetecken_Tillhör_Ras(
     alien_id    CHAR(25),
-    ras_ID      SMALLINT UNSIGNED,
+    ras_namn    SMALLINT UNSIGNED,
     kännetecken VARCHAR(32),
-    PRIMARY KEY (alien_id, ras_id, kännetecken),
-    FOREIGN KEY (alien_id, ras_id) REFERENCES Alien (alien_id, ras_id),
+    PRIMARY KEY (alien_id, ras_namn, kännetecken),
+    FOREIGN KEY (alien_id, ras_namn) REFERENCES Alien (alien_id, ras_namn),
     FOREIGN KEY (kännetecken) REFERENCES Kännetecken(attribut)
 );
 
@@ -248,7 +232,6 @@ CREATE TABLE Hemligstämplat_Logg
     loggID      SMALLINT AUTO_INCREMENT,
     logg_datum  DATETIME DEFAULT NOW(),
     alien_id    CHAR(25),
-    ras_id      SMALLINT UNSIGNED,
     ras_namn    VARCHAR(30),
     ras_kännetecken VARCHAR(255) NOT NULL,
     PRIMARY KEY (loggID)
@@ -303,46 +286,45 @@ BEGIN
     END IF;
 END;
 
--- Hemligstämplar alla aliens rasfält som har param_ras_id samt rasen självt.
-CREATE PROCEDURE hemligstämpla_ras_med_id(IN param_ras_ID SMALLINT)
+-- Hemligstämplar alla aliens rasfält som har param_ras_namn samt rasen självt.
+CREATE PROCEDURE hemligstämpla_på_ras_namn(IN param_ras_namn SMALLINT)
     BEGIN
         -- Loggför aliens med rasen som hemligstämplas. --
-        INSERT INTO Hemligstämplat_Logg(alien_id, ras_id, ras_namn)
-        SELECT alien_id, ras_id, ras_namn FROM Alien
-        WHERE ras_id = param_ras_ID;
+        INSERT INTO Hemligstämplat_Logg(alien_id, ras_namn)
+        SELECT alien_id, ras_namn FROM Alien
+        WHERE ras_namn = param_ras_namn;
 
         -- Sparar information om rasen för återskapande senare.
         UPDATE Hemligstämplat_Logg, Kännetecken_Tillhör_Ras
         SET ras_kännetecken = kännetecken
-        WHERE ras_id = param_ras_ID;
+        WHERE ras_namn = param_ras_namn;
 
-        -- Uppdaterar rasen på aliens med param_ras_ID till 'HEMLIGSTÄMPLAT'.
+        -- Uppdaterar rasen på aliens med param_ras_namn till 'HEMLIGSTÄMPLAT'.
         UPDATE
             Alien
         SET
-            ras_namn = 'Hemligstämplat',
-            ras_id = NULL
+            ras_namn = 'Hemligstämplat'
         WHERE
-            Alien.ras_id = param_ras_ID;
+            ras_namn = param_ras_namn;
     END;
 
--- Avklassificerar både ras och alien med ras_ID.
-CREATE PROCEDURE avklassificera(IN param_ras_id SMALLINT)
+-- Avklassificerar både ras och alien med ras_namn.
+CREATE PROCEDURE avklassificera(IN param_ras_namn SMALLINT)
     BEGIN
         -- Återskapar eventuella kännetecken för rasen.
-        INSERT IGNORE INTO Kännetecken_Tillhör_Ras (ras_id, kännetecken)
-        SELECT ras_id, ras_kännetecken FROM Hemligstämplat_Logg
-        WHERE Hemligstämplat_Logg.ras_id = param_ras_id;
+        INSERT IGNORE INTO Kännetecken_Tillhör_Ras (ras_namn, kännetecken)
+        SELECT ras_namn, ras_kännetecken FROM Hemligstämplat_Logg
+        WHERE Hemligstämplat_Logg.ras_namn = param_ras_namn;
 
         -- Återger rasen till alla Aliens med samma ras innan hemligstämplande.
         UPDATE
             Alien,
             Hemligstämplat_Logg
         SET
-            Alien.ras_id = param_ras_id
+            Alien.ras_namn = param_ras_namn
         WHERE
             Alien.alien_id = Hemligstämplat_Logg.alien_id
-            AND Hemligstämplat_Logg.ras_id = param_ras_id;
+            AND Hemligstämplat_Logg.ras_namn = param_ras_namn;
 
     END;
 
@@ -366,7 +348,7 @@ CREATE PROCEDURE avklassificera_alien(IN param_alien_id CHAR(25))
                 Alien,
                 Hemligstämplat_Logg
             SET
-                Alien.ras_id = Hemligstämplat_Logg.ras_id
+                Alien.ras_namn = Hemligstämplat_Logg.ras_namn
             WHERE
                 Alien.alien_id = Hemligstämplat_Logg.alien_id
                 AND Hemligstämplat_Logg.alien_id = param_alien_id;

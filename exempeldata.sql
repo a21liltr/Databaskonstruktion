@@ -24,6 +24,9 @@ INSERT INTO Oregistrerad_Alien (alien_id, namn) VALUES (1111, 'Åsa'),
                                                        (8888, 'Will'),
                                                        (9999, 'Gunilla');
 
+
+SELECT * FROM Alien;
+
 INSERT INTO Registrerad_Alien (alien_id, namn, hemplanet)
     VALUES (2222, 'Torbjörn', 'MWDXACJA');
 INSERT INTO Registrerad_Alien (alien_id, namn, hemplanet)
@@ -32,16 +35,8 @@ INSERT INTO Registrerad_Alien (alien_id, namn, hemplanet)
     VALUES (4444, 'Märta', 'Mars');
 INSERT INTO Registrerad_Alien (alien_id, namn, hemplanet)
     VALUES (1010, 'Duplication', 'Ixion');
-
-SELECT * FROM Alien;
-SELECT COUNT(DISTINCT ras_namn) FROM Alien;
-SELECT ras_id FROM Alien WHERE ras_namn = 'I2OJNLW9ian' LIMIT 1;
-SELECT * FROM Alien;
-DELETE FROM Alien WHERE ras_id IS NOT NULL;
-DELETE FROM Registrerad_Alien;
-
-DROP trigger addera_registrerad;
-
+INSERT INTO Registrerad_Alien (alien_id, namn, hemplanet)
+    VALUES (1020, 'Kopia 2', 'Ixion');
 
 INSERT INTO Alien_Relation (alien_idA, alien_idB, relation) VALUES (1111, 4444, 'Gifta'),
                                                              (1111, 2222, 'Syskon'),
@@ -68,7 +63,7 @@ VALUES (1, NOW(), 2, 9999);
 INSERT INTO Vapen_Ägare (vapen_id, alien_id)
 VALUES (1, 9999);
 
-SELECT * FROM Alien_Personnummer_view;
+
 
 
 
