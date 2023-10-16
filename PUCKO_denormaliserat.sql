@@ -2,6 +2,44 @@ DROP DATABASE IF EXISTS a21liltr;
 CREATE DATABASE IF NOT EXISTS a21liltr;
 USE a21liltr;
 
+CREATE TABLE användare (
+    id  INT AUTO_INCREMENT,
+    användare   VARCHAR(50) NOT NULL,
+    lösenord    VARCHAR(100) NOT NULL,
+    roll        VARCHAR(32) NOT NULL,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE Trigger_Logg (
+    logg_id INT AUTO_INCREMENT,
+    loggtid TIMESTAMP DEFAULT CURRENT_TIMESTAMP(),
+    trigger_typ ENUM ('RADERING', 'INSÄTTNING', 'UPPDATERING'),
+    data    VARCHAR(32) NOT NULL,
+    användare   VARCHAR(50) NOT NULL,
+    PRIMARY KEY (logg_id)
+);
+
+CREATE TABLE Hemligstämplat_Logg
+(
+    loggID      SMALLINT AUTO_INCREMENT,
+    logg_datum  TIMESTAMP DEFAULT CURRENT_TIMESTAMP(),
+    alien_id    CHAR(25),
+    ras_namn    VARCHAR(30),
+    ras_kännetecken VARCHAR(255) NOT NULL,
+    PRIMARY KEY (loggID)
+);
+
+CREATE INDEX hemlig_logg_index ON Hemligstämplat_Logg (logg_datum ASC) USING BTREE;
+
+CREATE TABLE Hemligstämplat_Logg_Kommentar
+(
+    loggID      SMALLINT AUTO_INCREMENT,
+    kommentar   VARCHAR(255),
+    PRIMARY KEY (loggID),
+    FOREIGN KEY (loggID) REFERENCES Hemligstämplat_Logg (loggID)
+);
+
+
 CREATE TABLE Farlighet(
     farlighet_id    TINYINT UNSIGNED AUTO_INCREMENT,
     grad            VARCHAR(16) UNIQUE,
@@ -41,14 +79,16 @@ CREATE PROCEDURE addera_alien(IN new_id CHAR(25))
     END;
 
 CREATE TRIGGER addera_oregistrerad
-    BEFORE INSERT ON Oregistrerad_Alien
+    BEFORE INSERT
+    ON Oregistrerad_Alien
     FOR EACH ROW
     BEGIN
         CALL addera_alien(NEW.alien_id);
     END;
 
 CREATE TRIGGER sätt_datum_oreg_alien
-    BEFORE INSERT ON Oregistrerad_Alien
+    BEFORE INSERT
+    ON Oregistrerad_Alien
     FOR EACH ROW
     BEGIN
         IF NEW.införelsedatum IS NULL OR NEW.införelsedatum = '' THEN
@@ -69,10 +109,10 @@ CREATE TABLE Registrerad_Alien(
 );
 
 CREATE TRIGGER addera_registrerad
-    BEFORE INSERT ON Registrerad_Alien
+    BEFORE INSERT
+    ON Registrerad_Alien
     FOR EACH ROW
     BEGIN
-        DECLARE ny_id SMALLINT;
         DECLARE ny_ras VARCHAR(30);
         DECLARE sparade_raser SMALLINT;
 
@@ -98,7 +138,8 @@ BEGIN
 END;
 
 CREATE TRIGGER sätt_datum_reg_alien
-    BEFORE INSERT ON Registrerad_Alien
+    BEFORE INSERT
+    ON Registrerad_Alien
     FOR EACH ROW
     BEGIN
         IF NEW.pnr IS NULL OR NEW.pnr = '' THEN
@@ -115,6 +156,24 @@ CREATE TABLE Alien_Relation(
     FOREIGN KEY (alien_idB) REFERENCES Alien(alien_id)
 );
 
+CREATE TRIGGER logga_insättning_alien
+    BEFORE INSERT
+    ON Alien
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO Trigger_Logg (trigger_typ, data, användare)
+            VALUES ('INSÄTTNING', CONCAT('Alien: ', NEW.alien_id), CURRENT_USER);
+    END;
+
+CREATE TRIGGER logga_raderingar_alien
+    BEFORE DELETE
+    ON Alien
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO Trigger_Logg (trigger_typ, data, användare)
+            VALUES ('RADERING', CONCAT('Alien: ', OLD.alien_id), CURRENT_USER);
+    END;
+
 CREATE TABLE Skepp(
     skepp_id    INT,
     sittplatser INT,
@@ -124,7 +183,8 @@ CREATE TABLE Skepp(
 );
 
 CREATE TRIGGER chk_skepp
-BEFORE INSERT ON Skepp
+BEFORE INSERT
+ON Skepp
 FOR EACH ROW
 BEGIN
     -- Det finns för lite information för att veta var ett skepp är tillverkat,
@@ -227,26 +287,6 @@ CREATE TABLE Procedure_Begränsning (
     PRIMARY KEY (användare, procedure_namn)
 );
 
-CREATE TABLE Hemligstämplat_Logg
-(
-    loggID      SMALLINT AUTO_INCREMENT,
-    logg_datum  DATETIME DEFAULT NOW(),
-    alien_id    CHAR(25),
-    ras_namn    VARCHAR(30),
-    ras_kännetecken VARCHAR(255) NOT NULL,
-    PRIMARY KEY (loggID)
-);
-
-CREATE INDEX hemlig_logg_index ON Hemligstämplat_Logg (logg_datum ASC) USING BTREE;
-
-CREATE TABLE Hemligstämplat_Logg_Kommentar
-(
-    loggID      SMALLINT AUTO_INCREMENT,
-    kommentar   VARCHAR(255),
-    PRIMARY KEY (loggID),
-    FOREIGN KEY (loggID) REFERENCES Hemligstämplat_Logg (loggID)
-);
-
 -- Räknar samtliga rader i Vapen OCH relationstabellen Skepp_Alien som en given alien_id förekommer.
 -- Returnerar antalet rader i tabellerna med koppling till given alien_id.
 CREATE FUNCTION count_kopplingar(alien_id VARCHAR(25)) RETURNS INT
@@ -262,7 +302,8 @@ END;
 
 -- Säkerställer så att Alien inte kan har 15 eller fler kopplingar innan addering av ny rad.
 CREATE TRIGGER chk_kopplingar_skepp
-BEFORE INSERT ON Skepp_Alien_Relation
+BEFORE INSERT
+ON Skepp_Alien_Relation
 FOR EACH ROW
 BEGIN
     DECLARE kopplingar INT;
@@ -275,7 +316,8 @@ END;
 
 -- Samma som föregående --
 CREATE TRIGGER chk_kopplingar_vapen
-BEFORE INSERT ON Vapen
+BEFORE INSERT
+ON Vapen
 FOR EACH ROW
 BEGIN
     DECLARE kopplingar INT;
@@ -285,6 +327,37 @@ BEGIN
         SET MESSAGE_TEXT = 'Alien har redan 15 kopplingar till vapen och/eller rymdkskepp.';
     END IF;
 END;
+
+CREATE TRIGGER uppdatera_Vapen_Ägare
+    AFTER INSERT
+    ON Vapen
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO Vapen_Ägare (vapen_id, alien_id, skepp_id) VALUES (NEW.vapen_id, NEW.alien_id, NEW.skepp_id);
+    END;
+
+CREATE TRIGGER radering_Vapen_Ägare
+    AFTER DELETE
+    ON Vapen
+    FOR EACH ROW
+    BEGIN
+        DELETE FROM Vapen_Ägare WHERE Vapen_ägare.vapen_id = OLD.vapen_id;
+    END;
+
+CREATE TRIGGER logga_uppdatering_vapen
+    AFTER UPDATE
+    ON Vapen
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO Trigger_Logg (trigger_typ, data, användare)
+            VALUES ('UPPDATERING', CONCAT('Vapen: ', OLD.vapen_id), CURRENT_USER);
+
+        UPDATE Vapen_Ägare
+        SET Vapen_Ägare.skepp_id = NEW.skepp_id,
+            Vapen_Ägare.alien_id = NEW.alien_id
+        WHERE Vapen_Ägare.vapen_id = NEW.vapen_id;
+    END;
+
 
 -- Hemligstämplar alla aliens rasfält som har param_ras_namn samt rasen självt.
 CREATE PROCEDURE hemligstämpla_på_ras_namn(IN param_ras_namn SMALLINT)
@@ -339,6 +412,8 @@ CREATE PROCEDURE avklassificera_alien(IN param_alien_id CHAR(25))
         WHERE alien_id = param_alien_id;
 
         -- matchning bör vara antingen 0 ELLER 1, då alien_iden är unik.
+        -- resultatet = 0 : alien INTE hemlig.
+        -- resultatet = 1 : alien är hemlig.
         IF matchning = 0 THEN
             SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'ALIEN_ID existerar inte eller är EJ HEMLIGSTÄMPLAT.';
@@ -353,7 +428,34 @@ CREATE PROCEDURE avklassificera_alien(IN param_alien_id CHAR(25))
                 Alien.alien_id = Hemligstämplat_Logg.alien_id
                 AND Hemligstämplat_Logg.alien_id = param_alien_id;
         END IF;
+    END;
 
+CREATE PROCEDURE radering_kopplingar_alien(IN param_alien_id CHAR(25))
+    BEGIN
+        -- Raderar alla tillhörande kopplingar, raderingen loggas INTE.
+        START TRANSACTION;
+
+        DELETE FROM Hemligstämplat_Logg WHERE alien_id = param_alien_id;
+
+        DELETE FROM Kännetecken_Tillhör_Alien WHERE alien_id = param_alien_id;
+
+        DELETE FROM Vapen WHERE alien_id = param_alien_id;
+
+        DELETE FROM Vapen_Ägare WHERE alien_id = param_alien_id;
+
+        DELETE FROM Skepp_Alien_Relation WHERE alien_id = param_alien_id;
+
+        DELETE FROM Oregistrerad_Alien WHERE alien_id = param_alien_id;
+        DELETE FROM Registrerad_Alien WHERE alien_id = param_alien_id;
+
+        DELETE FROM Alien_Relation
+               WHERE alien_idA = param_alien_id
+                  OR alien_idB = param_alien_id;
+
+        -- Raderar den faktiska alien vars alien_id man har fyllt i.
+        DELETE FROM Alien WHERE alien_id = param_alien_id;
+
+        COMMIT;
     END;
 
 CREATE PROCEDURE radera_alien(IN param_alien_id CHAR(25))
@@ -387,35 +489,31 @@ BEGIN
         WHERE användare = @nuvarande_användare
         AND procedure_namn = 'radera_alien';
 
+        CALL radering_kopplingar_alien(param_alien_id);
 
-        -- Raderar alla tillhörande kopplingar, raderingen loggas INTE.
-        START TRANSACTION;
-
-        DELETE FROM Hemligstämplat_Logg WHERE alien_id = param_alien_id;
-
-        DELETE FROM Kännetecken_Tillhör_Alien WHERE alien_id = param_alien_id;
-
-        DELETE FROM Vapen WHERE alien_id = param_alien_id;
-
-        DELETE FROM Vapen_Ägare WHERE alien_id = param_alien_id;
-
-        DELETE FROM Skepp_Alien_Relation WHERE alien_id = param_alien_id;
-
-        DELETE FROM Oregistrerad_Alien WHERE alien_id = param_alien_id;
-        DELETE FROM Registrerad_Alien WHERE alien_id = param_alien_id;
-
-        DELETE FROM Alien_Relation
-               WHERE alien_idA = param_alien_id
-                  OR alien_idB = param_alien_id;
-
-        -- Raderar den faktiska alien vars alien_id man har fyllt i.
-        DELETE FROM Alien WHERE alien_id = param_alien_id;
-
-        COMMIT;
     END IF;
 END;
 
-CREATE PROCEDURE radera_skepp (IN rymdskepp_id INT)
+CREATE PROCEDURE radering_kopplingar_skepp(IN rymdskepp_id INT)
+    BEGIN
+        -- Raderar alla tillhörande kopplingar, raderingen loggas INTE.
+            START TRANSACTION;
+
+            DELETE FROM Kännetecken_Tillhör_Skepp WHERE skepp_id = rymdskepp_id;
+
+            DELETE FROM Vapen WHERE skepp_id = rymdskepp_id;
+
+            DELETE FROM Vapen_Ägare WHERE skepp_id = rymdskepp_id;
+
+            DELETE FROM Skepp_Alien_Relation WHERE skepp_id = rymdskepp_id;
+
+            -- Raderar det faktiska skeppet vars id man har fyllt i.
+            DELETE FROM Skepp WHERE skepp_id = rymdskepp_id;
+
+            COMMIT;
+    END;
+
+CREATE PROCEDURE radera_skepp (IN param_rymdskepp_id INT)
     BEGIN
         DECLARE användningar TINYINT;
         DECLARE stopp TINYINT;
@@ -446,19 +544,7 @@ CREATE PROCEDURE radera_skepp (IN rymdskepp_id INT)
             WHERE användare = @nuvarande_användare
             AND procedure_namn = 'radera_aien';
 
-            -- Raderar alla tillhörande kopplingar, raderingen loggas INTE.
-            START TRANSACTION;
-
-            DELETE FROM Kännetecken_Tillhör_Skepp WHERE skepp_id = rymdskepp_id;
-
-            DELETE FROM Vapen WHERE skepp_id = rymdskepp_id;
-
-            DELETE FROM Skepp_Alien_Relation WHERE skepp_id = rymdskepp_id;
-
-            -- Raderar det faktiska skeppet vars id man har fyllt i.
-            DELETE FROM Skepp WHERE skepp_id = rymdskepp_id;
-
-            COMMIT;
+            CALL radering_kopplingar_skepp(param_rymdskepp_id);
         END IF;
     END;
 
@@ -477,10 +563,10 @@ CREATE PROCEDURE nollställ_alla_maxade (OUT resultat TEXT)
         FROM Procedure_Begränsning
         WHERE användningar >= begränsning;
 
-        -- Det är samma personer som i resultat som kommer att få sina användningar nollställt.
-        UPDATE Procedure_Begränsning
-        SET användningar = 0
-        WHERE användningar = begränsning;
+            -- Det är samma personer som i resultat som kommer att få sina användningar nollställt.
+            UPDATE Procedure_Begränsning
+            SET användningar = 0
+            WHERE användningar >= begränsning;
     END;
 
 CREATE PROCEDURE ändra_begränsning (IN agent VARCHAR(50), IN kommando VARCHAR(50), IN gräns TINYINT)
@@ -493,12 +579,30 @@ CREATE PROCEDURE ändra_begränsning (IN agent VARCHAR(50), IN kommando VARCHAR(
 
 -- Skapar olika USERS för databasen med specifika rättigheter beroende på USER typ.
 CREATE USER IF NOT EXISTS 'a21liltr_agent'@'%' IDENTIFIED BY 'foo';
-GRANT EXECUTE ON PROCEDURE a21liltr.radera_alien TO 'a21liltr_agent'@'%';
-
 CREATE USER IF NOT EXISTS 'a21liltr_administratör'@'%' IDENTIFIED BY 'bar';
-GRANT SELECT ON mysql.user TO 'a21liltr_administratör'@'%';
+
+INSERT INTO användare (användare, lösenord, roll) VALUES ('agent', 'foo', 'agent'),
+                                                         ('administratör', 'bar', 'administratör');
+
+-- Rättigheter till en "vanlig" agent.
+GRANT EXECUTE ON PROCEDURE a21liltr.radera_alien TO 'a21liltr_agent'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.radera_skepp TO 'a21liltr_agent'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera TO 'a21liltr_agent'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera_alien TO 'a21liltr_agent'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.hemligstämpla_på_ras_namn TO 'a21liltr_agent'@'%';
+
+-- Rättigheter till en agent (administratör) med högre auktoritet.
+GRANT EXECUTE ON PROCEDURE a21liltr.radera_alien TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.radera_skepp TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera_alien TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.hemligstämpla_på_ras_namn TO 'a21liltr_administratör'@'%';
 GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_begränsning TO 'a21liltr_administratör'@'%';
+GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_alla_maxade TO 'a21liltr_administratör'@'%';
 GRANT EXECUTE ON PROCEDURE a21liltr.ändra_begränsning TO 'a21liltr_administratör'@'%';
+
+-- Laddar om så att användarna får sina rättigheter.
+FLUSH PRIVILEGES;
 
 -- Förenklad vy för att kunna få en överblick över alla 'personnummer' på registrerade aliens,
 -- samt införelsedatum i databasen (som även dessa kommer stå under 'personnummer') för oregistrerade aliens,

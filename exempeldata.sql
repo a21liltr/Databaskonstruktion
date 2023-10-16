@@ -59,10 +59,23 @@ VALUES (1, NOW(), 2, 9999);
 INSERT INTO Vapen_Ägare (vapen_id, alien_id)
 VALUES (1, 9999);
 
+INSERT INTO Procedure_Begränsning (användare, procedure_namn, användningar, begränsning)
+    VALUES ('Stina', 'AA', 1, 3),
+           ('Johan', 'AA', 2, 3),
+           ('Olof', 'BB', 3, 3),
+           ('Lisa', 'AA', 3, 3),
+           ('Kajsa', 'BB', 3, 5),
+           ('Kim', 'BB', 1, 3),
+           ('Yngve', 'AA', 2, 5);
+
+CALL nollställ_alla_maxade(@result);
+SELECT @result;
+SELECT * FROM Nått_Begränsning_view;
+
 SELECT * FROM Alien;
 SELECT * FROM Registrerad_Alien;
 
 
-
+drop procedure nollställ_alla_maxade;
 
 
