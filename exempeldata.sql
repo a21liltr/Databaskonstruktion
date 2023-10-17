@@ -56,9 +56,6 @@ INSERT INTO Kännetecken_Tillhör_Skepp (skepp_id, kännetecken) VALUES (5656, '
 INSERT INTO Vapen (vapen_id, tillverkat, farlighet, alien_id)
 VALUES (1, NOW(), 2, 9999);
 
-INSERT INTO Vapen_Ägare (vapen_id, alien_id)
-VALUES (1, 9999);
-
 INSERT INTO Procedure_Begränsning (användare, procedure_namn, användningar, begränsning)
     VALUES ('Stina', 'AA', 1, 3),
            ('Johan', 'AA', 2, 3),

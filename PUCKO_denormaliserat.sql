@@ -341,7 +341,7 @@ CREATE TRIGGER radering_Vapen_Ägare
     ON Vapen
     FOR EACH ROW
     BEGIN
-        DELETE FROM Vapen_Ägare WHERE Vapen_ägare.vapen_id = OLD.vapen_id;
+        DELETE FROM Vapen_Ägare WHERE vapen_id = OLD.vapen_id;
     END;
 
 CREATE TRIGGER logga_uppdatering_vapen
@@ -645,20 +645,7 @@ GRANT SELECT ON a21liltr.Kännetecken_Entitet_view TO 'a21liltr_agent'@'%';
 
 
 -- Rättigheter till en agent (administratör) med högre auktoritet.
-GRANT EXECUTE ON PROCEDURE a21liltr.radera_alien TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.radera_skepp TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.avklassificera_alien TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.hemligstämpla_på_ras_namn TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_begränsning TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.nollställ_alla_maxade TO 'a21liltr_administratör'@'%';
-GRANT EXECUTE ON PROCEDURE a21liltr.ändra_begränsning TO 'a21liltr_administratör'@'%';
-GRANT SELECT ON a21liltr.Alien_Personnummer_view TO 'a21liltr_administratör'@'%';
-GRANT SELECT ON a21liltr.Offentliga_Raser_view TO 'a21liltr_administratör'@'%';
-GRANT SELECT ON a21liltr.Hemliga_Aliens_view TO 'a21liltr_administratör'@'%';
-GRANT SELECT ON a21liltr.Kännetecken_Entitet_view TO 'a21liltr_administratör'@'%';
-GRANT SELECT ON a21liltr.Nått_Begränsning_view TO 'a21liltr_administratör'@'%';
-GRANT SELECT ON a21liltr.AVG_Användning_view TO 'a21liltr_administratör'@'%';
+GRANT ALL PRIVILEGES ON a21liltr.* TO 'a21liltr_administratör'@'%';
 
 -- Laddar om så att användarna får sina rättigheter.
 FLUSH PRIVILEGES;
