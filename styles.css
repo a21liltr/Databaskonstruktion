@@ -1,5 +1,6 @@
 .register_and_list {
-    display: inline-block;
+    display: flex;
+    flex-direction: row;
 }
 
 .registration {
@@ -8,7 +9,21 @@
     padding-top: 12px;
     padding-left: 16px;
     padding-right: 16px;
-    display: inline-flex;
+    padding-bottom: 12px;
+    width: fit-content;
+    height: fit-content;
+}
+
+.registered_aliens {
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: 12px;
+    background-color: aquamarine;
+    width: fit-content;
+}
+
+.unregistered_aliens {
+    background-color: brown;
 }
 
 .alien_list table, th, td {
@@ -18,5 +33,4 @@
 
 td {
     padding: 12px;
-    text-indent: 8px;
 }
