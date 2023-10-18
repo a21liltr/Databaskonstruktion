@@ -1,8 +1,22 @@
+.register_and_list {
+    display: inline-block;
+}
+
 .registration {
     border: 2px outset black;
     border-color: black;
     padding-top: 12px;
     padding-left: 16px;
     padding-right: 16px;
-    display: inline-block;
+    display: inline-flex;
+}
+
+.alien_list table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+
+td {
+    padding: 12px;
+    text-indent: 8px;
 }
