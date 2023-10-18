@@ -1,0 +1,33 @@
+﻿@model Tester
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+<div>
+    Hello - @ViewBag.Message
+</div>
+
+<div>
+    Hello 2 - @Model.Name - @Model.Status - @Model.Age
+</div>
+
+<div>
+    @ViewBag.Message
+    <form method="post" action="@Url.Action("LoggedIn", "Home")">
+        <label>USERNAME:</label><br />
+        <input name="username" type="text" /><br />
+
+        <label>PASSWORD:</label><br />
+        <input name="password" type="password" /><br />
+        <input type="submit" value="SUBMIT" />
+    </form>
+</div>
+
+@{
+
+}

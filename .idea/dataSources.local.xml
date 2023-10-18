@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="dataSourceStorageLocal" created-in="PS-232.10072.32">
+    <data-source name="@wwwlab.webug.se" uuid="e1993dab-c708-41fd-a39a-9280277dfe36">
+      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="MYSQL" exact-version="0" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>databaskonstruktion</user-name>
+      <schema-mapping />
+      <ssh-properties>
+        <enabled>true</enabled>
+        <ssh-config-id>fed51868-62b5-4fc5-a507-2322e63b0a7c</ssh-config-id>
+      </ssh-properties>
+    </data-source>
+  </component>
+</project>

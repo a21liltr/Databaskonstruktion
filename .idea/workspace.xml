@@ -4,11 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="f22d38b5-2a22-4f49-b298-a098130e709a" name="Changes" comment="Justerar exempeldata.">
-      <change afterPath="$PROJECT_DIR$/styles.css" afterDir="false" />
+    <list default="true" id="f22d38b5-2a22-4f49-b298-a098130e709a" name="Changes" comment="Define process for form submission.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/PUCKO_denormaliserat.sql" beforeDir="false" afterPath="$PROJECT_DIR$/PUCKO_denormaliserat.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/db_connection.php" beforeDir="false" afterPath="$PROJECT_DIR$/db_connection.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/index.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/styles.css" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,6 +26,7 @@
     <setting file="file://$PROJECT_DIR$/db_connection.php" root0="SKIP_INSPECTION" root1="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/exempeldata.sql" root0="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/index.php" root0="SKIP_INSPECTION" root1="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/registration_center.php" root0="SKIP_INSPECTION" root1="SKIP_INSPECTION" />
     <setting file="file://$PROJECT_DIR$/styles.css" root0="SKIP_INSPECTION" />
   </component>
   <component name="PhpWorkspaceProjectConfiguration" interpreter_name="databaskonstruktion@wwwlab.webug.se:22 password" />
@@ -75,7 +76,7 @@
       <workItem from="1697478965626" duration="686000" />
       <workItem from="1697480920689" duration="3280000" />
       <workItem from="1697552687289" duration="3151000" />
-      <workItem from="1697615140965" duration="5532000" />
+      <workItem from="1697615140965" duration="16452000" />
     </task>
     <task id="LOCAL−00001" summary="Justerar exempeldata.">
       <option name="closed" value="true" />
@@ -84,7 +85,42 @@
       <option name="presentableId" value="LOCAL−00001" />
       <updated>1697552745180</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL−00002" summary="Ruta för registrering...">
+      <option name="closed" value="true" />
+      <created>1697629054736</created>
+      <option name="number" value="LOCAL−00002" />
+      <option name="presentableId" value="LOCAL−00002" />
+      <updated>1697629054736</updated>
+    </task>
+    <task id="LOCAL−00003" summary="Merge funktion sätt_pnr_reg_alien med trigger sätt_datum_reg_alien.">
+      <option name="closed" value="true" />
+      <created>1697629086308</created>
+      <option name="number" value="LOCAL−00003" />
+      <option name="presentableId" value="LOCAL−00003" />
+      <updated>1697629086308</updated>
+    </task>
+    <task id="LOCAL−00004" summary="Insert to database with php logic.">
+      <option name="closed" value="true" />
+      <created>1697629256382</created>
+      <option name="number" value="LOCAL−00004" />
+      <option name="presentableId" value="LOCAL−00004" />
+      <updated>1697629256382</updated>
+    </task>
+    <task id="LOCAL−00005" summary="Divvying divs.">
+      <option name="closed" value="true" />
+      <created>1697633018692</created>
+      <option name="number" value="LOCAL−00005" />
+      <option name="presentableId" value="LOCAL−00005" />
+      <updated>1697633018692</updated>
+    </task>
+    <task id="LOCAL−00006" summary="Define process for form submission.">
+      <option name="closed" value="true" />
+      <created>1697633862895</created>
+      <option name="number" value="LOCAL−00006" />
+      <option name="presentableId" value="LOCAL−00006" />
+      <updated>1697633862895</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -92,7 +128,12 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Justerar exempeldata." />
-    <option name="LAST_COMMIT_MESSAGE" value="Justerar exempeldata." />
+    <MESSAGE value="Ruta för registrering..." />
+    <MESSAGE value="Merge funktion sätt_pnr_reg_alien med trigger sätt_datum_reg_alien." />
+    <MESSAGE value="Insert to database with php logic." />
+    <MESSAGE value="Divvying divs." />
+    <MESSAGE value="Define process for form submission." />
+    <option name="LAST_COMMIT_MESSAGE" value="Define process for form submission." />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />
