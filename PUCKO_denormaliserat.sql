@@ -124,7 +124,7 @@ CREATE TRIGGER addera_registrerad
         END IF;
     END;
 
-CREATE FUNCTION sätt_pnr_reg_alien() RETURNS CHAR(13)
+/*CREATE FUNCTION sätt_pnr_reg_alien() RETURNS CHAR(13)
 DETERMINISTIC
 BEGIN
     DECLARE count INT;
@@ -135,15 +135,22 @@ BEGIN
 
     SET new_pnr = CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'), '-', LPAD(count + 1, 4, '0'));
     RETURN new_pnr;
-END;
+END;*/
 
 CREATE TRIGGER sätt_datum_reg_alien
     BEFORE INSERT
     ON Registrerad_Alien
     FOR EACH ROW
     BEGIN
+        DECLARE count INT;
+        DECLARE new_pnr CHAR(13);
+
         IF NEW.pnr IS NULL OR NEW.pnr = '' THEN
-            SET NEW.pnr = sätt_pnr_reg_alien();
+            SELECT COUNT(*) INTO count
+            FROM Registrerad_Alien;
+
+            SET new_pnr = CONCAT(DATE_FORMAT(NOW(), '%Y%m%d'), '-', LPAD(count + 1, 4, '0'));
+            SET NEW.pnr = new_pnr;
         END IF;
     END;
 
