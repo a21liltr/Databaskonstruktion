@@ -11,7 +11,7 @@ session_start();
 </head>
 <body>
     <h3>Logged in as: <?php echo $_SESSION['USER']; ?></h3>
-    <form method="post" action="Logout.php">
+    <form method="post" action="logout.php">
         <input class="btn" type="submit" value="Logout">
     </form>
 
