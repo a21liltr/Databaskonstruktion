@@ -1,36 +1,22 @@
-.register_and_list {
-    display: flex;
-    flex-direction: row;
+.logout {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
 }
 
-.registration {
-    border: 2px outset black;
-    border-color: black;
-    padding-top: 12px;
-    padding-left: 16px;
-    padding-right: 16px;
-    padding-bottom: 12px;
-    width: fit-content;
-    height: fit-content;
+.execute {
+    background-color: #b2b2b2;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    margin-top: 8px;
+    cursor: pointer;
+    border-radius: 5px;
 }
 
-.registered_aliens {
-    padding-left: 16px;
-    padding-right: 16px;
-    padding-bottom: 12px;
-    background-color: aquamarine;
-    width: fit-content;
-}
-
-.unregistered_aliens {
-    background-color: brown;
-}
-
-.alien_list table, th, td {
-    border: 1px solid black;
-    border-collapse: collapse;
-}
-
-td {
-    padding: 12px;
+.execute:hover {
+    background-color: #008CBA;
 }

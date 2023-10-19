@@ -5,51 +5,69 @@ session_start();
 <!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
-    <style>
-        .btn { background-color: #f44336; color: white; border: none; padding: 10px 20px; cursor: pointer; }
-    </style>
+    <title>a21liltr: Landing site</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
 </head>
 <body>
     <h3>Logged in as: <?php echo $_SESSION['USER']; ?></h3>
     <form method="post" action="logout.php">
-        <input class="btn" type="submit" value="Logout">
+        <input class="logout" type="submit" value="Logout">
     </form>
 
-<?php
-echo "<h3>List of Registered Aliens</h3>";
+    <h3>Reset Limit For Agent on Procedure</h3>
+    <form method="post" action="reset_limit.php" >
+        <table>
+            <tr>
+                <td><label for="agent">Agent:</label></td>
+                <td><input type="text" id="agent" name="agent" required></td>
+            </tr>
 
+            <tr>
+                <td><label for="kommando">Procedure name:</label></td>
+                <td><input type="text" id="kommando" name="command" required><br></td>
+            </tr>
+        </table>
+        <input class="execute" type="submit" value="RESET LIMIT">
+    </form><br><br>
+
+<?php
+// Shows list of races in a dropdownlist,
+// Races are DISTINCT.
 try {
-    $query = $pdo->prepare("SELECT namn FROM Registrerad_Alien");
+    $query = $pdo->prepare("SELECT DISTINCT ras_namn FROM Offentliga_Raser_view");
     $query->execute();
 
-    $aliens = $query->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $query->fetchAll(PDO::FETCH_ASSOC);
 
-    if ($aliens) {
+    if ($stmt) {
         echo "<select name='dropdown'>";
-        foreach ($aliens as $alien) {
-            echo "<option>{$alien['namn']}</option>";
+        echo "<option hidden disabled selected>Races in the database</option>";
+        foreach ($stmt as $row) {
+            echo "<option>{$row['ras_namn']}</option>";
         }
         echo "</select><br>";
     } else {
-        echo "No persons found!";
+        echo "<option hidden disabled selected>No races in the database</option>";
     }
 
 } catch (PDOException $e) {
     echo "Error: " . $e->getMessage();
 }
+?>
 
-$query = $pdo->prepare('SELECT  alien_id, namn FROM Registrerad_Alien');
-$query->execute();
-$aliens = $query->fetchAll(PDO::FETCH_ASSOC);
+<h3>Register an ALIEN</h3>
+<table>
+    <form method="post" action="add_alien.php">
+        <tr><td>Name:</td><td><input type="media_namn" name="namn"></td></tr>
+        <tr><td>Home Planet:</td><td><input type="text" name="hemplanet" placeholder="Add a Home Planet to fully register"></td></tr>
+        <tr><td><input class="execute" type="submit" value="ADD ALIEN"></td></tr>
+    </form>
+</table>
 
-foreach ($aliens as $alien) {
-    $id = $alien['alien_id'];
-    $namn = $alien['namn'];
+<?php
 
-    echo "<a href='delete_alien.php?id={$id}'>Delete Alien {$namn} with ID: {$id}</a><br>";
-}
-
-echo "<h4>Registered Aliens: </h4>";
+echo "<h3>List of Aliens</h3>";
+echo "<h4>Registered Aliens (fully registered aliens): </h4>";
 echo "<table>";
     $query = "SELECT * FROM Registrerad_Alien";
     $aliens = $pdo->query($query);
@@ -68,8 +86,19 @@ echo "<table>";
     }
     echo "</tbody>";
     echo "</table>";
+    $query = $pdo->prepare('SELECT  alien_id, namn FROM Registrerad_Alien');
+    $query->execute();
+    $aliens = $query->fetchAll(PDO::FETCH_ASSOC);
 
-    echo "<h4>Unregistered Aliens: </h4>";
+    foreach ($aliens as $alien) {
+        $id = $alien['alien_id'];
+        $namn = $alien['namn'];
+
+        //HYPERLINK to immediately delete a registered alien from the DATABASE.
+        echo "<a href='delete_alien.php?id={$id}'>Delete Alien {$namn} with ID: {$id}</a><br>";
+    }
+
+    echo "<h4>Unregistered Aliens (partially registered aliens) : </h4>";
     echo "<table>";
     $query = "SELECT * FROM Oregistrerad_Alien";
     $aliens = $pdo->query($query);
@@ -90,25 +119,15 @@ echo "<table>";
     echo "</table>";
 ?>
 
-    <h3>Reset Limit For Agent on Procedure</h3>
-    <form method="post" action="reset_limit.php" >
-        <table>
-            <tr>
-                <td><label for="agent">For Agent:</label></td>
-                <td><input type="text" id="agent" name="agent" required></td>
-            </tr>
-
-            <tr>
-                <td><label for="kommando">Procedure name:</label></td>
-                <td><input type="text" id="kommando" name="command" required><br></td>
-            </tr>
-        </table>
-        <input type="submit" value="Execute Procedure">
+    <h3>DELETE an alien from the database</h3>
+    <form method="post" action="delete_id.php" >
+        <input type="text" id="alien_id" name="alien_id">
+        <input class="execute" type="submit" value="DELETE ALIEN">
     </form>
 
-    <h3>Find Alien by RACE</h3>
+
+    <h3>Find Alien by DANGER LEVEL</h3>
     <form method="post" action="search_by_race.php">
-        <label>DANGER LEVEL:</label>
         <select name="farlighet">
             <option value="1">Harmless</option>
             <option value="2">Half Harmless</option>
@@ -119,19 +138,7 @@ echo "<table>";
             <option value="7">Extremely Dangerous</option>
             <option value="8">Run For Your Life</option>s
         </select>
-        <input type="submit" value="Find">
+        <input class="execute" type="submit" value="FIND">
     </form>
-
-
-    <h3>Add an ALIEN</h3>
-        <table>
-            <form method="post" action="add_alien.php">
-                <tr><td>ID:</td><td><input type="number" name="alien_id"></td></tr>
-                <tr><td>Namn:</td><td><input type="media_namn" name="namn"></td></tr>
-                <tr><td>Hemplanet:</td><td><input type="text" name="hemplanet"></td></tr>
-                <tr><td><input type="submit" value="ADD ALIEN"></td></tr>
-            </form>
-        </table>
-
 </body>
 </html>

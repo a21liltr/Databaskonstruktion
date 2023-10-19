@@ -6,7 +6,6 @@ CREATE TABLE användare (
     id  INT AUTO_INCREMENT,
     användarnamn   VARCHAR(50) NOT NULL,
     lösenord    VARCHAR(100) NOT NULL,
-    roll        VARCHAR(32) NOT NULL,
     PRIMARY KEY (id)
 );
 
@@ -56,8 +55,7 @@ CREATE TABLE Alien(
     farlighet   TINYINT UNSIGNED DEFAULT 4,
     ras_namn    VARCHAR(30),
     PRIMARY KEY (alien_id),
-    FOREIGN KEY (farlighet) REFERENCES Farlighet (farlighet_id),
-    UNIQUE (alien_id, ras_namn)
+    FOREIGN KEY (farlighet) REFERENCES Farlighet (farlighet_id)
 );
 
 CREATE INDEX alien_rasnamn_index ON Alien (ras_namn ASC) USING BTREE;
@@ -85,6 +83,8 @@ CREATE TRIGGER addera_oregistrerad
     BEGIN
         CALL addera_alien(NEW.alien_id);
     END;
+
+drop trigger addera_oregistrerad;
 
 CREATE TRIGGER sätt_datum_oreg_alien
     BEFORE INSERT
@@ -218,11 +218,9 @@ CREATE TABLE Skepp_Alien_Relation(
 );
 
 CREATE TABLE Kännetecken_Tillhör_Ras(
-    alien_id    CHAR(25),
     ras_namn    VARCHAR(30),
     kännetecken VARCHAR(32),
-    PRIMARY KEY (alien_id, ras_namn, kännetecken),
-    FOREIGN KEY (alien_id, ras_namn) REFERENCES Alien (alien_id, ras_namn),
+    PRIMARY KEY (ras_namn, kännetecken),
     FOREIGN KEY (kännetecken) REFERENCES Kännetecken(attribut)
 );
 
@@ -620,8 +618,8 @@ FROM Kännetecken_Tillhör_Skepp ORDER BY ID;
 CREATE VIEW Offentliga_Raser_view AS
 SELECT alien_id, ras_namn
 FROM Alien
-WHERE ras_namn <> 'HEMLIGSTÄMPLAT' OR ras_namn IS NULL
-GROUP BY ras_namn;
+WHERE ras_namn <> 'HEMLIGSTÄMPLAT'
+ORDER BY ras_namn;
 
 CREATE VIEW Hemliga_Aliens_view AS
 SELECT alien_id, ras_namn
