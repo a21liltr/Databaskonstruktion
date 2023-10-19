@@ -72,4 +72,8 @@ SELECT * FROM Nått_Begränsning_view;
 SELECT * FROM Alien;
 SELECT * FROM Registrerad_Alien;
 
+SELECT ras_namn FROM Alien;
+
+SELECT * FROM Procedure_Begränsning;
+
 

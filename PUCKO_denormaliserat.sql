@@ -367,17 +367,27 @@ CREATE TRIGGER logga_uppdatering_vapen
 
 
 -- Hemligstämplar alla aliens rasfält som har param_ras_namn samt rasen självt.
-CREATE PROCEDURE hemligstämpla_på_ras_namn(IN param_ras_namn SMALLINT)
+CREATE PROCEDURE hemligstämpla_på_ras_namn(IN param_ras_namn VARCHAR(30))
     BEGIN
+        DECLARE kt VARCHAR(30);
         -- Loggför aliens med rasen som hemligstämplas. --
         INSERT INTO Hemligstämplat_Logg(alien_id, ras_namn)
         SELECT alien_id, ras_namn FROM Alien
         WHERE ras_namn = param_ras_namn;
 
+        SELECT alien_id FROM Alien WHERE ras_namn = param_ras_namn;
+
         -- Sparar information om rasen för återskapande senare.
+        INSERT INTO kt
+        SELECT kännetecken
+        FROM Kännetecken_Tillhör_Ras
+        WHERE ras_namn = param_ras_namn;
+
+        IF kt IS NOT NULL OR kt <> '' THEN
         UPDATE Hemligstämplat_Logg, Kännetecken_Tillhör_Ras
         SET ras_kännetecken = kännetecken
         WHERE ras_namn = param_ras_namn;
+        END IF;
 
         -- Uppdaterar rasen på aliens med param_ras_namn till 'HEMLIGSTÄMPLAT'.
         UPDATE
