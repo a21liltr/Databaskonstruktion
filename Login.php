@@ -23,18 +23,18 @@ try {
         if($username && $password && loginUser($pdo,$username, $password))
         {
             $_SESSION['USER'] = $username;
-            header('Location: Index.php');
+            header('Location: index.php');
 
         }
         else
         {
-            echo "fail";
+            echo "Wrong USERNAME or PASSWORD";
         }
     }
 }
 catch(PDOException $exception)
 {
-    echo "db connection";
+    echo "Something went wrong!";
 }
 
 
@@ -48,17 +48,16 @@ catch(PDOException $exception)
     <title>a21liltr</title>
 </head>
 <body>
-<h1>WELCOME ALL ALIENS!</h1>
-<br />
+    <h1>WELCOME ALL ALIENS!</h1><br />
 
-<form method="post">
-    <label>USERNAME: </label><br>
-    <input name="username" type="text"><br><br>
+    <form method="post">
+        <label>USERNAME: </label><br>
+        <input name="username" type="text"><br><br>
 
-    <label>PASSWORD: </label><br>
-    <input name="password" type="password"><br><br>
+        <label>PASSWORD: </label><br>
+        <input name="password" type="password"><br><br>
 
-    <input type="submit" value="LOGIN">
-</form>
+        <input type="submit" value="LOGIN">
+    </form>
 </body>
 </html>
