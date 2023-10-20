@@ -7,15 +7,17 @@ namespace DatabaskonstruktionMVC.Controllers
 	public class HomeController : Controller
 	{
 		private readonly ILogger<HomeController> _logger;
+		private readonly IConfiguration _configuration;
 
-		public HomeController(ILogger<HomeController> logger)
+		public HomeController(ILogger<HomeController> logger, IConfiguration configuration)
 		{
 			_logger = logger;
+			_configuration = configuration;
 		}
 
 		public IActionResult Index(string message)
 		{
-			ViewBag.Message = "Test message";
+			ViewBag.Message = "Please log in below";
 
 			var test = new Tester();
 			test.Age = 1;

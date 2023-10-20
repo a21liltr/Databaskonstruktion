@@ -24,3 +24,7 @@
 input[type="text"]{
     width: 300px;
 }
+
+input[type="password"]{
+    width: 300px;
+}

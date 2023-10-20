@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="@wwwlab.webug.se" uuid="e1993dab-c708-41fd-a39a-9280277dfe36">
+    <data-source source="LOCAL" name="@127.0.0.1" uuid="e1993dab-c708-41fd-a39a-9280277dfe36">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
-      <jdbc-url>jdbc:mysql://wwwlab.webug.se:3306</jdbc-url>
+      <jdbc-url>jdbc:mysql://127.0.0.1:3306</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>

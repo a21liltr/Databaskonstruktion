@@ -1,14 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="dataSourceStorageLocal" created-in="PS-232.10072.32">
-    <data-source name="@wwwlab.webug.se" uuid="e1993dab-c708-41fd-a39a-9280277dfe36">
-      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="MYSQL" exact-version="0" />
+    <data-source name="@127.0.0.1" uuid="e1993dab-c708-41fd-a39a-9280277dfe36">
+      <database-info product="MySQL" version="8.0.34-0ubuntu0.20.04.1" jdbc-version="4.2" driver-name="MySQL Connector/J" driver-version="mysql-connector-java-8.0.25 (Revision: 08be9e9b4cba6aa115f9b27b215887af40b159e0)" dbms="MYSQL" exact-version="8.0.34" exact-driver-version="8.0">
+        <extra-name-characters>#@</extra-name-characters>
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
       <secret-storage>master_key</secret-storage>
-      <user-name>databaskonstruktion</user-name>
-      <schema-mapping />
+      <user-name>dbkonstruktion</user-name>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" qname="@" />
+        </introspection-scope>
+      </schema-mapping>
       <ssh-properties>
         <enabled>true</enabled>
-        <ssh-config-id>fed51868-62b5-4fc5-a507-2322e63b0a7c</ssh-config-id>
+        <ssh-config-id>8b30146f-6a74-40f7-8761-a89db259798d</ssh-config-id>
+        <local-port>22</local-port>
       </ssh-properties>
     </data-source>
   </component>
