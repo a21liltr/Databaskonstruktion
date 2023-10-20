@@ -1,5 +1,10 @@
 USE a21liltr;
 
+INSERT INTO användare (användarnamn, lösenord) VALUES ('agent', 'foo'),
+                                                      ('admin', 'bar');
+
+select * from användare;
+
 INSERT INTO Farlighet(grad)
 VALUES ('Harmlös'),
        ('Halvt harmlös'),

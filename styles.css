@@ -20,3 +20,7 @@
 .execute:hover {
     background-color: #008CBA;
 }
+
+input[type="text"]{
+    width: 300px;
+}
