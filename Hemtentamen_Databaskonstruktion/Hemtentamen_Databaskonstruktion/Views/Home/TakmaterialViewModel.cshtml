@@ -1,0 +1,29 @@
+﻿@model List<Hemtentamen_Databaskonstruktion.Models.Takmaterial>
+
+@{
+    ViewData["Title"] = "Takmaterial List";
+}
+
+<h2>Takmaterial List</h2>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Namn</th>
+            <th>Tyngd</th>
+            <th>Tillverkare</th>
+            <!-- Add other table headers for remaining fields if needed -->
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Namn</td>
+                <td>@item.Tyngd</td>
+                <td>@item.Tillverkare</td>
+                <!-- Add other table cells for remaining fields if needed -->
+            </tr>
+        }
+    </tbody>
+</table>

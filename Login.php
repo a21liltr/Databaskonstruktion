@@ -39,3 +39,8 @@ catch(PDOException $exception)
 
 
 ?>
+
+<form action="radera_takmaterial.php" method="post">
+    <input type="hidden" name="takmaterial_id" value="1">
+    <input type="submit" value="Radera Takmaterial">
+</form>

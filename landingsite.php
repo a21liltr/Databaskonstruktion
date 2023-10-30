@@ -15,6 +15,26 @@
     <input class="logout" type="submit" value="Logout">
 </form>
 
+<?php
+    echo "<table>";
+    $query = "SELECT * FROM Procedure_Begränsning";
+    $stmt = $pdo->query($query);
+    if($stmt != null)
+    {
+        foreach ($stmt as $row)
+        {
+            echo "<tr>";
+            echo "<td>" . $row['användare'] . "</td>";
+            echo "<td> " . $row['procedure_namn'] . "</td>";
+            echo "<td>" .  $row['användningar'] . "</td>";
+            echo "<td>" .  $row['begränsning'] . "</td>";
+            echo "</tr>";
+        }
+
+    }
+
+    ?>
+
 <h3>Reset Limit For Agent on Procedure</h3>
 <form method="post" action="reset_limit.php" >
     <table>
